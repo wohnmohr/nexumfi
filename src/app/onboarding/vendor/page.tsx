@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   Card,
@@ -22,12 +23,14 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
+import { AppLogo } from "@/components/layout/app-logo";
 import {
   Building2,
   Loader2,
   CheckCircle2,
   ArrowLeft,
   Pencil,
+  Sparkles,
 } from "lucide-react";
 import {
   COUNTRY_OPTIONS,
@@ -304,14 +307,16 @@ export default function VendorOnboardingPage() {
   /* ---- Success state ---- */
   if (isComplete) {
     return (
-      <div className="min-h-screen flex flex-col items-center px-4 py-8 md:py-12">
-        <div className="w-full max-w-xl space-y-6">
+      <VendorPageLayout>
+      <div className="w-full max-w-6xl mx-auto px-6 py-8 md:py-12">
+        <div className="w-full max-w-[600px] mx-auto space-y-6">
           <div>
             <h1 className="text-xl md:text-2xl font-semibold">
-              Add Buyer
+              Add Company
             </h1>
             <p className="text-sm text-muted-foreground mt-1">
-              Register a new buyer for credit assessment.
+              Turn invoices into cash. Add companies to get credit against what
+              you&apos;re owed — minutes, not weeks.
             </p>
           </div>
 
@@ -320,10 +325,10 @@ export default function VendorOnboardingPage() {
               <div className="size-14 rounded-2xl bg-emerald-500/15 flex items-center justify-center mb-4">
                 <CheckCircle2 className="size-7 text-emerald-500" />
               </div>
-              <h2 className="text-lg font-semibold">Buyer Added!</h2>
+              <h2 className="text-lg font-semibold">Company Added!</h2>
               <p className="text-sm text-muted-foreground mt-1 max-w-sm">
-                {form.legal_name} has been submitted for KYC verification. You
-                will be notified once verification is complete.
+                {form.legal_name} has been submitted. You&apos;ll be notified once
+                verification is complete — minutes, not weeks.
               </p>
 
               <div className="w-full max-w-xs mt-6 rounded-xl bg-muted/50 p-4 space-y-2.5">
@@ -362,20 +367,22 @@ export default function VendorOnboardingPage() {
           </Card>
         </div>
       </div>
+      </VendorPageLayout>
     );
   }
 
   /* ---- Review state ---- */
   if (showReview) {
     return (
-      <div className="min-h-screen flex flex-col items-center px-4 py-8 md:py-12">
-        <div className="w-full max-w-xl space-y-6">
+      <VendorPageLayout>
+      <div className="w-full max-w-6xl mx-auto px-6 py-8 md:py-12">
+        <div className="w-full max-w-[600px] mx-auto space-y-6">
           <div>
             <h1 className="text-xl md:text-2xl font-semibold">
-              Add Buyer
+              Add Company
             </h1>
             <p className="text-sm text-muted-foreground mt-1">
-              Review the buyer details before submitting.
+              Review the company details. Transparent. No hidden fees.
             </p>
           </div>
 
@@ -484,25 +491,28 @@ export default function VendorOnboardingPage() {
                   ) : (
                     <CheckCircle2 className="size-4" />
                   )}
-                  {isSubmitting ? "Submitting..." : "Submit Buyer"}
+                  {isSubmitting ? "Submitting..." : "Submit Company"}
                 </Button>
               </div>
             </CardContent>
           </Card>
         </div>
       </div>
+      </VendorPageLayout>
     );
   }
 
   /* ---- Main form ---- */
   return (
-    <div className="min-h-screen flex flex-col items-center px-4 py-8 md:py-12">
-      <div className="w-full max-w-xl space-y-6">
+    <VendorPageLayout>
+    <div className="w-full max-w-6xl mx-auto px-6 py-8 md:py-12">
+      <div className="w-full max-w-[600px] mx-auto space-y-6">
         {/* Page header */}
         <div>
-          <h1 className="text-xl md:text-2xl font-semibold">Add Buyer</h1>
+          <h1 className="text-xl md:text-2xl font-semibold">Add Company</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Register a new buyer for credit assessment.
+            Turn invoices into cash. Add companies to get credit against what
+            you&apos;re owed — minutes, not weeks.
           </p>
         </div>
 
@@ -510,10 +520,11 @@ export default function VendorOnboardingPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg">
               <Building2 className="size-5 text-primary" />
-              Buyer Details
+              Company Details
             </CardTitle>
             <CardDescription>
-              Enter the buyer&apos;s business details and KYC information.
+              Enter the company&apos;s business details. Same-day credit, no more
+              chasing.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-5">
@@ -786,6 +797,63 @@ export default function VendorOnboardingPage() {
           </CardContent>
         </Card>
       </div>
+    </div>
+    </VendorPageLayout>
+  );
+}
+
+/* ================================================================== */
+/*  Layout with header and footer (matches landing page)               */
+/* ================================================================== */
+
+function VendorPageLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="min-h-screen flex flex-col bg-background">
+      {/* ---- Top Banner ---- */}
+      <div className="bg-gradient-to-r from-primary/90 via-primary to-primary/80 text-primary-foreground">
+        <div className="max-w-6xl mx-auto px-4 py-2.5 flex items-center justify-center gap-2 text-sm font-medium">
+          <Sparkles className="size-4 shrink-0" />
+          <span>
+            Your receivables. Your runway. — Built for vendors & policy holders
+          </span>
+        </div>
+      </div>
+
+      {/* ---- Header ---- */}
+      <header className="flex items-center px-6 py-4 max-w-6xl mx-auto w-full">
+        <AppLogo href="/" className="text-foreground" />
+      </header>
+
+      {/* ---- Main ---- */}
+      <main className="flex-1 w-full flex flex-col">
+        {children}
+      </main>
+
+      {/* ---- Footer ---- */}
+      <footer className="border-t border-border bg-muted/30">
+        <div className="max-w-6xl mx-auto px-6 py-10">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
+            <AppLogo href="/" className="text-foreground" />
+            <nav className="flex flex-wrap items-center justify-center gap-6 text-sm">
+              <Link href="/?auth=open" className="text-muted-foreground hover:text-foreground transition-colors">
+                Sign in
+              </Link>
+              <Link href="/contact" className="text-muted-foreground hover:text-foreground transition-colors">
+                Contact
+              </Link>
+              <Link href="/privacy" className="text-muted-foreground hover:text-foreground transition-colors">
+                Privacy
+              </Link>
+              <Link href="/terms" className="text-muted-foreground hover:text-foreground transition-colors">
+                Terms
+              </Link>
+            </nav>
+          </div>
+          <p className="text-center sm:text-left text-xs text-muted-foreground mt-6">
+            &copy; {new Date().getFullYear()} Nexum. All rights reserved.
+          </p>
+        </div>
+      </footer>
     </div>
   );
 }
