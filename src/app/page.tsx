@@ -5,6 +5,7 @@ import {
   ArrowRight,
   CheckCircle2,
 } from "lucide-react";
+import { AppLogo } from "@/components/layout/app-logo";
 
 /* ------------------------------------------------------------------ */
 /*  Public landing page — role selection                               */
@@ -15,14 +16,7 @@ export default function HomePage() {
     <div className="min-h-screen flex flex-col bg-background">
       {/* ---- Header ---- */}
       <header className="flex items-center justify-between px-6 py-4 max-w-6xl mx-auto w-full">
-        <div className="flex items-center gap-2">
-          <div className="size-8 rounded-lg bg-primary/15 flex items-center justify-center">
-            <ShieldCheck className="size-4 text-primary" />
-          </div>
-          <span className="text-lg font-semibold tracking-tight">
-            HyperMonks
-          </span>
-        </div>
+        <AppLogo href="/" className="text-foreground" />
         <Link
           href="/login"
           className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"

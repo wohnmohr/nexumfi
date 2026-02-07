@@ -15,6 +15,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { signOut } from "@/app/login/actions";
+import { AppLogo } from "./app-logo";
 
 interface AppHeaderProps {
   onMenuToggle?: () => void;
@@ -45,18 +46,7 @@ export function AppHeader({ onMenuToggle }: AppHeaderProps) {
           </Button>
 
           {/* Logo */}
-          <Link href="/dashboard" className="flex items-center gap-2">
-            <svg width="36" height="36" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" className="shrink-0">
-              <g transform="translate(15,15)">
-                <rect x="0" y="20" width="70" height="50" rx="10" fill="#00CCFF" opacity="0.35"/>
-                <rect x="10" y="15" width="70" height="50" rx="10" fill="#00CCFF" opacity="0.6"/>
-                <rect x="20" y="10" width="70" height="50" rx="10" fill="#FF1493"/>
-              </g>
-            </svg>
-            <span className="font-semibold text-sidebar-foreground text-base">
-              Nexum
-            </span>
-          </Link>
+          <AppLogo href="/dashboard" className="text-sidebar-foreground" />
         </div>
 
         {/* Main header content */}
