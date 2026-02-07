@@ -30,7 +30,7 @@ export default function HomePage() {
       <header className="flex items-center justify-between px-6 py-4 max-w-6xl mx-auto w-full">
         <AppLogo href="/" className="text-foreground" />
         <Button asChild variant="outline" className="border-primary text-primary bg-primary/10 hover:bg-primary/20 hover:border-primary">
-          <Link href="/login">Sign In</Link>
+          <Link href="/?auth=open">Sign In</Link>
         </Button>
       </header>
 
@@ -56,7 +56,7 @@ export default function HomePage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 w-full max-w-2xl sm:items-stretch">
           {/* Vendor Company card */}
           <Link
-            href="/signup?role=vendor"
+            href="/?auth=open&role=vendor"
             className="group relative flex flex-col rounded-2xl border border-border bg-card p-6 sm:p-8 transition-all duration-300 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/5"
           >
             <div className="size-12 rounded-xl bg-primary/10 flex items-center justify-center mb-5">
@@ -80,7 +80,7 @@ export default function HomePage() {
 
           {/* Policy Holder card */}
           <Link
-            href="/signup?role=insurer"
+            href="/?auth=open&role=insurer"
             className="group relative flex flex-col rounded-2xl border border-border bg-card p-6 sm:p-8 transition-all duration-300 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/5"
           >
             <div className="size-12 rounded-xl bg-emerald-500/10 flex items-center justify-center mb-5">
@@ -108,7 +108,7 @@ export default function HomePage() {
         {/* ---- Existing account ---- */}
         <p className="text-sm text-muted-foreground mt-10">
           Been here before?{" "}
-          <Link href="/login" className="text-primary hover:underline">
+          <Link href="/?auth=open" className="text-primary hover:underline">
             Sign in
           </Link>
         </p>
@@ -120,10 +120,7 @@ export default function HomePage() {
           <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
             <AppLogo href="/" className="text-foreground" />
             <nav className="flex flex-wrap items-center justify-center gap-6 text-sm">
-              <Link href="/signup" className="text-muted-foreground hover:text-foreground transition-colors">
-                Sign up
-              </Link>
-              <Link href="/login" className="text-muted-foreground hover:text-foreground transition-colors">
+              <Link href="/?auth=open" className="text-muted-foreground hover:text-foreground transition-colors">
                 Sign in
               </Link>
               <Link href="/contact" className="text-muted-foreground hover:text-foreground transition-colors">

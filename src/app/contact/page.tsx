@@ -85,7 +85,7 @@ export default function ContactPage() {
               <Link href="/">Home</Link>
             </Button>
             <Button asChild variant="outline" size="sm">
-              <Link href="/login">Sign In</Link>
+              <Link href="/contact?auth=open">Sign In</Link>
             </Button>
           </div>
         </div>

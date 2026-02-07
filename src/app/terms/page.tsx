@@ -18,7 +18,7 @@ export default function TermsPage() {
               <Link href="/">Home</Link>
             </Button>
             <Button asChild variant="outline" size="sm">
-              <Link href="/login">Sign In</Link>
+              <Link href="/terms?auth=open">Sign In</Link>
             </Button>
           </div>
         </div>
