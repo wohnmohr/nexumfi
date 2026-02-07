@@ -83,9 +83,15 @@ export async function signInWithGoogle(next?: string) {
   const headersList = await headers();
   const origin = headersList.get("origin") || headersList.get("host");
   const protocol = headersList.get("x-forwarded-proto") || "http";
-  const baseUrl = origin?.startsWith("http")
+  const dynamicOrigin = origin?.startsWith("http")
     ? origin
     : `${protocol}://${origin}`;
+
+  const baseUrl =
+    process.env.NODE_ENV === "development"
+      ? dynamicOrigin
+      : (process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") ??
+        "https://hypermonks-frontend.vercel.app");
 
   const callbackUrl = next
     ? `${baseUrl}/auth/callback?next=${encodeURIComponent(next)}`
