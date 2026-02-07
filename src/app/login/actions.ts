@@ -4,14 +4,24 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 export async function signInWithPassword(formData: FormData) {
   const supabase = await createClient();
-  const email = formData.get("email") as string;
-  const password = formData.get("password") as string;
+  const email = (formData.get("email") as string)?.trim() ?? "";
+  const password = (formData.get("password") as string) ?? "";
   const next = (formData.get("next") as string) || "/dashboard";
 
   if (!email || !password) {
     return { error: "Please enter both email and password" };
+  }
+
+  if (!EMAIL_REGEX.test(email)) {
+    return { error: "Please enter a valid email address" };
+  }
+
+  if (password.length < 6) {
+    return { error: "Password must be at least 6 characters" };
   }
 
   const { error } = await supabase.auth.signInWithPassword({
@@ -28,12 +38,24 @@ export async function signInWithPassword(formData: FormData) {
 
 export async function signUpWithPassword(formData: FormData) {
   const supabase = await createClient();
-  const email = formData.get("email") as string;
-  const password = formData.get("password") as string;
-  const name = formData.get("name") as string;
+  const email = (formData.get("email") as string)?.trim() ?? "";
+  const password = (formData.get("password") as string) ?? "";
+  const name = (formData.get("name") as string)?.trim() ?? "";
 
   if (!email || !password) {
     return { error: "Please enter both email and password" };
+  }
+
+  if (!EMAIL_REGEX.test(email)) {
+    return { error: "Please enter a valid email address" };
+  }
+
+  if (password.length < 6) {
+    return { error: "Password must be at least 6 characters" };
+  }
+
+  if (name && name.length < 2) {
+    return { error: "Name must be at least 2 characters" };
   }
 
   const { error } = await supabase.auth.signUp({

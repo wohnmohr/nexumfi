@@ -91,9 +91,10 @@ export function MobileNav({ isOpen, onClose }: MobileNavProps) {
             {isDapRoute(pathname) ? "DAP" : "Menu"}
           </p>
           {(isDapRoute(pathname) ? dapNavItems : dashboardNavItems).map((item) => {
-            const isActive =
-              pathname === item.href ||
-              pathname.startsWith(item.href + "/");
+            const isDashboardRoot = item.href === "/dashboard";
+            const isActive = isDashboardRoot
+              ? pathname === "/dashboard"
+              : pathname === item.href || pathname.startsWith(item.href + "/");
 
             return (
               <Link

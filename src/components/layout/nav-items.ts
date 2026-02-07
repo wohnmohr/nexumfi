@@ -21,8 +21,9 @@ export interface NavItem {
 export const dashboardNavItems: NavItem[] = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { label: "Get Credit", href: "/dashboard/get-credit", icon: CreditCard },
+  { label: "Wallet", href: "/dashboard/wallet", icon: Wallet },
   { label: "Profile", href: "/dashboard/profile", icon: User },
-  { label: "Settings", href: "/settings", icon: Settings },
+  { label: "Settings", href: "/dashboard/settings", icon: Settings },
 ];
 
 /** Nav items shown on /dashboard/dap/* routes */
@@ -38,7 +39,7 @@ export const dashboardBottomNavItems: NavItem[] = [
   { label: "Home", href: "/dashboard", icon: LayoutDashboard },
   { label: "Credit", href: "/dashboard/get-credit", icon: CreditCard },
   { label: "Profile", href: "/dashboard/profile", icon: User },
-  { label: "Wallet", href: "/wallet", icon: Wallet },
+  { label: "Wallet", href: "/dashboard/wallet", icon: Wallet },
 ];
 
 /** Bottom nav items for /dashboard/dap/* routes */

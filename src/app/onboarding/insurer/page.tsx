@@ -1614,7 +1614,7 @@ export default function InsurerOnboardingPage() {
         <Button
           variant="outline"
           onClick={
-            currentStep === 0 ? () => router.push("/") : handleBack
+            currentStep === 0 ? () => router.push("/dashboard") : handleBack
           }
         >
           <ArrowLeft className="size-4" />

@@ -770,7 +770,7 @@ export default function VendorOnboardingPage() {
               <Button
                 variant="outline"
                 className="flex-1"
-                onClick={() => router.push("/")}
+                onClick={() => router.push("/dashboard")}
               >
                 <ArrowLeft className="size-4" />
                 Cancel

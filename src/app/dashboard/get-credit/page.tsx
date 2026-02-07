@@ -107,7 +107,30 @@ export default function GetCreditPage() {
     claimNumber: false,
     insurer: false,
     claimAmount: false,
+    file: false,
   });
+
+  const claimAmountNum = Number(claimAmount);
+  const isClaimAmountValid =
+    claimAmount.trim() !== "" &&
+    !Number.isNaN(claimAmountNum) &&
+    claimAmountNum > 0;
+
+  const MAX_FILE_SIZE_MB = 10;
+  const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
+  const ALLOWED_TYPES = [".pdf", ".jpg", ".jpeg", ".png"];
+  const fileError =
+    touched.file
+      ? !file
+        ? "Claim document is required"
+        : file.size > MAX_FILE_SIZE_BYTES
+          ? `File must be under ${MAX_FILE_SIZE_MB}MB`
+          : !ALLOWED_TYPES.some((ext) =>
+              file.name.toLowerCase().endsWith(ext)
+            )
+            ? "File must be PDF, JPG, or PNG"
+            : null
+      : null;
 
   const fieldErrors = {
     claimNumber: touched.claimNumber
@@ -123,10 +146,13 @@ export default function GetCreditPage() {
     claimAmount: touched.claimAmount
       ? !claimAmount.trim()
         ? "Claim amount is required"
-        : Number(claimAmount) <= 0
-          ? "Amount must be greater than 0"
-          : null
+        : Number.isNaN(claimAmountNum)
+          ? "Please enter a valid number"
+          : claimAmountNum <= 0
+            ? "Amount must be greater than 0"
+            : null
       : null,
+    file: fileError,
   };
 
   // Processing state
@@ -170,13 +196,19 @@ export default function GetCreditPage() {
     e.preventDefault();
     setDragOver(false);
     const droppedFile = e.dataTransfer.files[0];
-    if (droppedFile) setFile(droppedFile);
+    if (droppedFile) {
+      setFile(droppedFile);
+      setTouched((p) => ({ ...p, file: true }));
+    }
   }, []);
 
   const handleFileSelect = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const selected = e.target.files?.[0];
-      if (selected) setFile(selected);
+      if (selected) {
+        setFile(selected);
+        setTouched((p) => ({ ...p, file: true }));
+      }
     },
     []
   );
@@ -186,12 +218,12 @@ export default function GetCreditPage() {
   const canSubmit =
     claimNumber.trim() &&
     insurer.trim() &&
-    claimAmount.trim() &&
-    Number(claimAmount) > 0 &&
-    file;
+    isClaimAmountValid &&
+    file &&
+    !fileError;
 
   const handleSubmit = async () => {
-    setTouched({ claimNumber: true, insurer: true, claimAmount: true });
+    setTouched({ claimNumber: true, insurer: true, claimAmount: true, file: true });
 
     if (!canSubmit) return;
 
@@ -295,7 +327,7 @@ export default function GetCreditPage() {
     setInsurer("");
     setClaimAmount("");
     setFile(null);
-    setTouched({ claimNumber: false, insurer: false, claimAmount: false });
+    setTouched({ claimNumber: false, insurer: false, claimAmount: false, file: false });
     setCurrentStageIndex(-1);
     setCreditAmount(0);
     setTokenId("");
@@ -391,12 +423,20 @@ export default function GetCreditPage() {
                       Max
                     </Button>
                   </div>
-                  {withdrawAmount !== "" &&
-                    Number(withdrawAmount) > walletBalance && (
-                      <p className="text-xs text-destructive">
-                        Amount exceeds your wallet balance
-                      </p>
-                    )}
+                  {withdrawAmount !== "" && (
+                    <>
+                      {Number(withdrawAmount) <= 0 && (
+                        <p className="text-xs text-destructive">
+                          Amount must be greater than 0
+                        </p>
+                      )}
+                      {Number(withdrawAmount) > walletBalance && (
+                        <p className="text-xs text-destructive">
+                          Amount exceeds your wallet balance
+                        </p>
+                      )}
+                    </>
+                  )}
                   <Button
                     className="w-full"
                     onClick={handleWithdrawFromWallet}
@@ -515,6 +555,9 @@ export default function GetCreditPage() {
             {/* File Upload */}
             <div className="space-y-2">
               <Label>Claim Document</Label>
+              {fileError && (
+                <p className="text-xs text-destructive">{fileError}</p>
+              )}
               {!file ? (
                 <div
                   onDragOver={(e) => {
@@ -543,6 +586,7 @@ export default function GetCreditPage() {
                     type="file"
                     accept=".pdf,.jpg,.jpeg,.png"
                     onChange={handleFileSelect}
+                    onClick={() => setTouched((p) => ({ ...p, file: true }))}
                     className="absolute inset-0 opacity-0 cursor-pointer"
                   />
                 </div>

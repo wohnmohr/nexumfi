@@ -28,9 +28,11 @@ export function Sidebar() {
           {inDap ? "DAP" : "Menu"}
         </p>
         {navItems.map((item) => {
-          const isActive =
-            pathname === item.href ||
-            pathname.startsWith(item.href + "/");
+          // Dashboard root: only active when pathname is exactly /dashboard
+          const isDashboardRoot = item.href === "/dashboard";
+          const isActive = isDashboardRoot
+            ? pathname === "/dashboard"
+            : pathname === item.href || pathname.startsWith(item.href + "/");
 
           return (
             <Link

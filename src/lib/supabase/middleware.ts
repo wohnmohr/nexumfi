@@ -56,8 +56,7 @@ export async function updateSession(request: NextRequest) {
   }
 
   // Redirect authenticated users away from auth pages to dashboard
-  // (but NOT from / — landing page is viewable when logged in,
-  //  middleware-level redirect only for login/signup/forgot-password)
+  // Preserve "next" param so users land where they intended (e.g. after login)
   const isAuthPage =
     pathname.startsWith("/login") ||
     pathname.startsWith("/signup") ||
@@ -65,7 +64,15 @@ export async function updateSession(request: NextRequest) {
 
   if (user && (pathname === "/" || isAuthPage)) {
     const url = request.nextUrl.clone();
-    url.pathname = "/dashboard";
+    const nextParam = url.searchParams.get("next");
+    // Validate next to prevent open redirect; only allow internal paths
+    const safeNext =
+      nextParam &&
+      nextParam.startsWith("/") &&
+      !nextParam.startsWith("//") &&
+      !nextParam.includes(":");
+    url.pathname = safeNext ? nextParam : "/dashboard";
+    url.searchParams.delete("next");
     return NextResponse.redirect(url);
   }
 
