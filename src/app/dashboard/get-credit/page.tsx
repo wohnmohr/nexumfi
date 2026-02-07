@@ -181,7 +181,7 @@ export default function GetCreditPage() {
   const [creditWithdrawnToWallet, setCreditWithdrawnToWallet] = useState(false);
 
   // Reclaim verification
-  const { proofs, isLoading: isVerifying, error: verifyError, startVerification, creditData } = useReclaim();
+  const { proofs, isLoading: isVerifying, error: verifyError, startVerification, creditData, setMockCreditData } = useReclaim();
   const isVerified = proofs !== null && proofs.length > 0;
 
   // Hydrate wallet balance from localStorage on mount
@@ -545,6 +545,15 @@ export default function GetCreditPage() {
                 Continue
               </Button>
             )}
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-full text-muted-foreground"
+              onClick={setMockCreditData}
+              disabled={isVerifying || !!creditData}
+            >
+              Skip (mock credit for testing)
+            </Button>
           </CardContent>
         </Card>
       )}
