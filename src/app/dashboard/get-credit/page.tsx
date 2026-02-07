@@ -37,6 +37,7 @@ import {
   formatCurrency,
   type InsuranceClaim,
 } from "@/lib/claims";
+import { useReclaim } from "@/app/hooks/useReclaim";
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -148,6 +149,10 @@ export default function GetCreditPage() {
   const [withdrawAmount, setWithdrawAmount] = useState("");
   const [isWithdrawingFromWallet, setIsWithdrawingFromWallet] = useState(false);
   const [withdrawSuccess, setWithdrawSuccess] = useState(false);
+
+  // Reclaim verification
+  const { proofs, isLoading: isVerifying, error: verifyError, startVerification } = useReclaim();
+  const isVerified = proofs !== null && proofs.length > 0;
 
   // Hydrate wallet balance from localStorage on mount
   useEffect(() => {
@@ -562,12 +567,39 @@ export default function GetCreditPage() {
               )}
             </div>
 
+            {/* Verify Receivables */}
+            <div className="space-y-2">
+              <Button
+                className="w-full"
+                size="lg"
+                variant={isVerified ? "outline" : "default"}
+                onClick={startVerification}
+                disabled={isVerifying || isVerified}
+              >
+                {isVerifying ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : isVerified ? (
+                  <CheckCircle2 className="size-4 text-emerald-500" />
+                ) : (
+                  <ShieldCheck className="size-4" />
+                )}
+                {isVerifying
+                  ? "Verifying..."
+                  : isVerified
+                    ? "Receivables Verified"
+                    : "Verify Receivables"}
+              </Button>
+              {verifyError && (
+                <p className="text-xs text-destructive">{verifyError}</p>
+              )}
+            </div>
+
             {/* Submit */}
             <Button
               className="w-full"
               size="lg"
               onClick={handleSubmit}
-              disabled={!canSubmit}
+              disabled={!canSubmit || !isVerified}
             >
               <Upload className="size-4" />
               Submit & Tokenize Asset
