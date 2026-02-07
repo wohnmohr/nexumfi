@@ -36,6 +36,27 @@ function LoginForm() {
   const [isPending, startTransition] = useTransition();
   const [isGoogleRedirecting, setIsGoogleRedirecting] = useState(false);
 
+  // Per-field validation
+  const [touched, setTouched] = useState({ email: false, password: false });
+  const fieldErrors = {
+    email: touched.email
+      ? !email.trim()
+        ? "Email is required"
+        : !EMAIL_REGEX.test(email)
+          ? "Please enter a valid email address"
+          : null
+      : null,
+    password: touched.password
+      ? !password.trim()
+        ? "Password is required"
+        : password.length < 6
+          ? "Password must be at least 6 characters"
+          : null
+      : null,
+  };
+
+  const hasFieldErrors = Object.values(fieldErrors).some(Boolean);
+
   // Pick up error from auth callback redirect
   useEffect(() => {
     const callbackError = searchParams.get("error");
@@ -47,8 +68,10 @@ function LoginForm() {
   const handleLogin = () => {
     setError(null);
 
-    if (!EMAIL_REGEX.test(email)) {
-      setError("Please enter a valid email address");
+    // Touch all fields to show validation
+    setTouched({ email: true, password: true });
+
+    if (!EMAIL_REGEX.test(email) || !password.trim() || password.length < 6) {
       return;
     }
 
@@ -99,9 +122,17 @@ function LoginForm() {
               type="email"
               placeholder="name@example.com"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                if (error) setError(null);
+              }}
+              onBlur={() => setTouched((prev) => ({ ...prev, email: true }))}
+              aria-invalid={!!fieldErrors.email}
               disabled={isLoading}
             />
+            {fieldErrors.email && (
+              <p className="text-xs text-destructive">{fieldErrors.email}</p>
+            )}
           </div>
           <div className="space-y-2">
             <div className="flex items-center justify-between">
@@ -118,20 +149,28 @@ function LoginForm() {
               type="password"
               placeholder="Enter your password"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                if (error) setError(null);
+              }}
+              onBlur={() => setTouched((prev) => ({ ...prev, password: true }))}
               onKeyDown={(e) => {
                 if (e.key === "Enter" && email.trim() && password.trim()) {
                   handleLogin();
                 }
               }}
+              aria-invalid={!!fieldErrors.password}
               disabled={isLoading}
             />
+            {fieldErrors.password && (
+              <p className="text-xs text-destructive">{fieldErrors.password}</p>
+            )}
           </div>
           <Button
             className="w-full"
             size="lg"
             onClick={handleLogin}
-            disabled={isLoading || !email.trim() || !password.trim()}
+            disabled={isLoading || !email.trim() || !password.trim() || hasFieldErrors}
           >
             {isPending && !isGoogleRedirecting ? (
               <Loader2 className="animate-spin" />

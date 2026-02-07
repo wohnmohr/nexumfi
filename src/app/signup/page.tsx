@@ -29,22 +29,65 @@ export default function SignUpPage() {
   const [isPending, startTransition] = useTransition();
   const [isGoogleRedirecting, setIsGoogleRedirecting] = useState(false);
 
+  // Per-field validation
+  const [touched, setTouched] = useState({
+    name: false,
+    email: false,
+    password: false,
+    confirmPassword: false,
+  });
+
+  const fieldErrors = {
+    name: touched.name
+      ? !name.trim()
+        ? "Full name is required"
+        : name.trim().length < 2
+          ? "Name must be at least 2 characters"
+          : null
+      : null,
+    email: touched.email
+      ? !email.trim()
+        ? "Email is required"
+        : !EMAIL_REGEX.test(email)
+          ? "Please enter a valid email address"
+          : null
+      : null,
+    password: touched.password
+      ? !password
+        ? "Password is required"
+        : password.length < 6
+          ? "Password must be at least 6 characters"
+          : null
+      : null,
+    confirmPassword: touched.confirmPassword
+      ? !confirmPassword
+        ? "Please confirm your password"
+        : confirmPassword !== password
+          ? "Passwords do not match"
+          : null
+      : null,
+  };
+
+  const hasFieldErrors = Object.values(fieldErrors).some(Boolean);
+
+  const handleBlur = (field: keyof typeof touched) => {
+    setTouched((prev) => ({ ...prev, [field]: true }));
+  };
+
   const handleSignUp = () => {
     setError(null);
     setSuccess(null);
 
-    if (!EMAIL_REGEX.test(email)) {
-      setError("Please enter a valid email address");
-      return;
-    }
+    // Touch all fields to reveal any remaining errors
+    setTouched({ name: true, email: true, password: true, confirmPassword: true });
 
-    if (password !== confirmPassword) {
-      setError("Passwords do not match");
-      return;
-    }
-
-    if (password.length < 6) {
-      setError("Password must be at least 6 characters");
+    if (
+      !name.trim() ||
+      name.trim().length < 2 ||
+      !EMAIL_REGEX.test(email) ||
+      password.length < 6 ||
+      password !== confirmPassword
+    ) {
       return;
     }
 
@@ -109,9 +152,17 @@ export default function SignUpPage() {
                   type="text"
                   placeholder="John Doe"
                   value={name}
-                  onChange={(e) => setName(e.target.value)}
+                  onChange={(e) => {
+                    setName(e.target.value);
+                    if (error) setError(null);
+                  }}
+                  onBlur={() => handleBlur("name")}
+                  aria-invalid={!!fieldErrors.name}
                   disabled={isLoading}
                 />
+                {fieldErrors.name && (
+                  <p className="text-xs text-destructive">{fieldErrors.name}</p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
@@ -120,9 +171,17 @@ export default function SignUpPage() {
                   type="email"
                   placeholder="name@example.com"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    if (error) setError(null);
+                  }}
+                  onBlur={() => handleBlur("email")}
+                  aria-invalid={!!fieldErrors.email}
                   disabled={isLoading}
                 />
+                {fieldErrors.email && (
+                  <p className="text-xs text-destructive">{fieldErrors.email}</p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
@@ -131,9 +190,17 @@ export default function SignUpPage() {
                   type="password"
                   placeholder="At least 6 characters"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    if (error) setError(null);
+                  }}
+                  onBlur={() => handleBlur("password")}
+                  aria-invalid={!!fieldErrors.password}
                   disabled={isLoading}
                 />
+                {fieldErrors.password && (
+                  <p className="text-xs text-destructive">{fieldErrors.password}</p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="confirm-password">Confirm Password</Label>
@@ -142,10 +209,15 @@ export default function SignUpPage() {
                   type="password"
                   placeholder="Repeat your password"
                   value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  onChange={(e) => {
+                    setConfirmPassword(e.target.value);
+                    if (error) setError(null);
+                  }}
+                  onBlur={() => handleBlur("confirmPassword")}
                   onKeyDown={(e) => {
                     if (
                       e.key === "Enter" &&
+                      name.trim() &&
                       email.trim() &&
                       password.trim() &&
                       confirmPassword.trim()
@@ -153,8 +225,12 @@ export default function SignUpPage() {
                       handleSignUp();
                     }
                   }}
+                  aria-invalid={!!fieldErrors.confirmPassword}
                   disabled={isLoading}
                 />
+                {fieldErrors.confirmPassword && (
+                  <p className="text-xs text-destructive">{fieldErrors.confirmPassword}</p>
+                )}
               </div>
               <Button
                 className="w-full"
@@ -162,9 +238,11 @@ export default function SignUpPage() {
                 onClick={handleSignUp}
                 disabled={
                   isLoading ||
+                  !name.trim() ||
                   !email.trim() ||
                   !password.trim() ||
-                  !confirmPassword.trim()
+                  !confirmPassword.trim() ||
+                  hasFieldErrors
                 }
               >
                 {isPending && !isGoogleRedirecting ? (

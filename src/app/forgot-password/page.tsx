@@ -16,15 +16,38 @@ import { Button } from "@/components/ui/button";
 import { resetPassword } from "@/app/login/actions";
 import { ArrowLeft, CheckCircle2, Loader2 } from "lucide-react";
 
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
+  // Per-field validation
+  const [touched, setTouched] = useState({ email: false });
+  const fieldErrors = {
+    email: touched.email
+      ? !email.trim()
+        ? "Email is required"
+        : !EMAIL_REGEX.test(email)
+          ? "Please enter a valid email address"
+          : null
+      : null,
+  };
+
+  const hasFieldErrors = Object.values(fieldErrors).some(Boolean);
+
   const handleReset = () => {
     setError(null);
     setSuccess(null);
+
+    // Touch all fields to reveal errors
+    setTouched({ email: true });
+
+    if (!EMAIL_REGEX.test(email)) {
+      return;
+    }
 
     startTransition(async () => {
       const formData = new FormData();
@@ -71,20 +94,28 @@ export default function ForgotPasswordPage() {
                   type="email"
                   placeholder="name@example.com"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    if (error) setError(null);
+                  }}
+                  onBlur={() => setTouched({ email: true })}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && email.trim()) {
                       handleReset();
                     }
                   }}
+                  aria-invalid={!!fieldErrors.email}
                   disabled={isPending}
                 />
+                {fieldErrors.email && (
+                  <p className="text-xs text-destructive">{fieldErrors.email}</p>
+                )}
               </div>
               <Button
                 className="w-full"
                 size="lg"
                 onClick={handleReset}
-                disabled={isPending || !email.trim()}
+                disabled={isPending || !email.trim() || hasFieldErrors}
               >
                 {isPending ? <Loader2 className="animate-spin" /> : null}
                 {isPending ? "Sending..." : "Send Reset Link"}

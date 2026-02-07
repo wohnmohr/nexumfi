@@ -51,11 +51,13 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // Redirect authenticated users away from login/signup pages
+  // Redirect authenticated users away from login/signup/home to dashboard
   if (
     user &&
-    (request.nextUrl.pathname.startsWith("/login") ||
-      request.nextUrl.pathname.startsWith("/signup"))
+    (request.nextUrl.pathname === "/" ||
+      request.nextUrl.pathname.startsWith("/login") ||
+      request.nextUrl.pathname.startsWith("/signup") ||
+      request.nextUrl.pathname.startsWith("/forgot-password"))
   ) {
     const url = request.nextUrl.clone();
     url.pathname = "/dashboard";
