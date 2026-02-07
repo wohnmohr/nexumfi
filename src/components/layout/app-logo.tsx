@@ -44,7 +44,7 @@ export function AppLogo({ href = "/", className }: AppLogoProps) {
           />
         </g>
       </svg>
-      <span className="font-semibold text-base">Nexum</span>
+      <span className="font-semibold text-2xl">Nexum</span>
     </>
   );
 
