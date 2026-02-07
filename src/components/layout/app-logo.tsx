@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Badge } from "@/components/ui/badge";
 
 interface AppLogoProps {
   href?: string;
@@ -45,6 +46,9 @@ export function AppLogo({ href = "/", className }: AppLogoProps) {
         </g>
       </svg>
       <span className="font-semibold text-2xl">Nexum</span>
+      <Badge variant="secondary" className="text-[10px] px-1.5 py-0 font-medium">
+        Beta
+      </Badge>
     </>
   );
 

@@ -45,6 +45,8 @@ export async function updateSession(request: NextRequest) {
     pathname.startsWith("/forgot-password") ||
     pathname.startsWith("/auth") ||
     pathname.startsWith("/contact") ||
+    pathname.startsWith("/privacy") ||
+    pathname.startsWith("/terms") ||
     pathname.startsWith("/demo");
 
   // Redirect unauthenticated users to login page (with return URL)

@@ -129,10 +129,10 @@ export default function HomePage() {
               <Link href="/contact" className="text-muted-foreground hover:text-foreground transition-colors">
                 Contact
               </Link>
-              <Link href="#" className="text-muted-foreground hover:text-foreground transition-colors">
+              <Link href="/privacy" className="text-muted-foreground hover:text-foreground transition-colors">
                 Privacy
               </Link>
-              <Link href="#" className="text-muted-foreground hover:text-foreground transition-colors">
+              <Link href="/terms" className="text-muted-foreground hover:text-foreground transition-colors">
                 Terms
               </Link>
             </nav>
