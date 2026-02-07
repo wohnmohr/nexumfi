@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import {
   Card,
   CardContent,
@@ -27,6 +27,16 @@ import {
   CreditCard,
   RefreshCw,
 } from "lucide-react";
+import {
+  saveClaim,
+  updateClaim,
+  getWalletBalance,
+  setWalletBalance as persistWalletBalance,
+  generateClaimId,
+  generateTokenId,
+  formatCurrency,
+  type InsuranceClaim,
+} from "@/lib/claims";
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -71,14 +81,6 @@ const TOKENIZATION_STAGES: TokenizationStage[] = [
 /* ------------------------------------------------------------------ */
 /*  Helpers                                                            */
 /* ------------------------------------------------------------------ */
-
-function formatCurrency(amount: number) {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: 2,
-  }).format(amount);
-}
 
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -134,7 +136,10 @@ export default function GetCreditPage() {
   const [creditAmount, setCreditAmount] = useState(0);
   const [tokenId, setTokenId] = useState("");
 
-  // Wallet state
+  // Active claim ID for current flow
+  const [activeClaimId, setActiveClaimId] = useState("");
+
+  // Wallet state — hydrate from localStorage
   const [walletBalance, setWalletBalance] = useState(0);
   const [isDepositing, setIsDepositing] = useState(false);
 
@@ -143,6 +148,16 @@ export default function GetCreditPage() {
   const [withdrawAmount, setWithdrawAmount] = useState("");
   const [isWithdrawingFromWallet, setIsWithdrawingFromWallet] = useState(false);
   const [withdrawSuccess, setWithdrawSuccess] = useState(false);
+
+  // Hydrate wallet balance from localStorage on mount
+  useEffect(() => {
+    setWalletBalance(getWalletBalance());
+  }, []);
+
+  // Persist wallet balance whenever it changes
+  useEffect(() => {
+    persistWalletBalance(walletBalance);
+  }, [walletBalance]);
 
   /* ---- File handlers ---- */
 
@@ -175,6 +190,28 @@ export default function GetCreditPage() {
 
     if (!canSubmit) return;
 
+    // Create & persist claim in localStorage
+    const claimId = generateClaimId();
+    const newTokenId = generateTokenId();
+    setActiveClaimId(claimId);
+    setTokenId(newTokenId);
+
+    const newClaim: InsuranceClaim = {
+      id: claimId,
+      claimNumber: claimNumber.trim(),
+      insurer: insurer.trim(),
+      claimAmount: Number(claimAmount),
+      creditAmount: 0,
+      tokenId: newTokenId,
+      status: "processing",
+      fileName: file.name,
+      fileSize: file.size,
+      createdAt: new Date().toISOString(),
+      walletDepositAmount: 0,
+      withdrawnAmount: 0,
+    };
+    saveClaim(newClaim);
+
     setStep("processing");
     setIsProcessing(true);
     setCurrentStageIndex(0);
@@ -191,9 +228,12 @@ export default function GetCreditPage() {
     const credit = Math.round(claim * creditPct * 100) / 100;
 
     setCreditAmount(credit);
-    setTokenId(
-      `HM-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`
-    );
+
+    // Update claim with credit amount & status
+    updateClaim(claimId, {
+      creditAmount: credit,
+      status: "credit-ready",
+    });
 
     setIsProcessing(false);
     setStep("credit-ready");
@@ -204,7 +244,17 @@ export default function GetCreditPage() {
   const handleDeposit = async () => {
     setIsDepositing(true);
     await sleep(2000);
-    setWalletBalance((prev) => prev + creditAmount);
+
+    const newBalance = Math.round((walletBalance + creditAmount) * 100) / 100;
+    setWalletBalance(newBalance);
+
+    // Update claim status in localStorage
+    updateClaim(activeClaimId, {
+      status: "deposited",
+      depositedAt: new Date().toISOString(),
+      walletDepositAmount: creditAmount,
+    });
+
     setIsDepositing(false);
     setStep("withdrawn");
   };
@@ -217,7 +267,10 @@ export default function GetCreditPage() {
 
     setIsWithdrawingFromWallet(true);
     await sleep(2000);
-    setWalletBalance((prev) => Math.round((prev - amount) * 100) / 100);
+
+    const newBalance = Math.round((walletBalance - amount) * 100) / 100;
+    setWalletBalance(newBalance);
+
     setIsWithdrawingFromWallet(false);
     setWithdrawSuccess(true);
 
@@ -241,6 +294,7 @@ export default function GetCreditPage() {
     setCurrentStageIndex(-1);
     setCreditAmount(0);
     setTokenId("");
+    setActiveClaimId("");
   };
 
   /* ---------------------------------------------------------------- */
