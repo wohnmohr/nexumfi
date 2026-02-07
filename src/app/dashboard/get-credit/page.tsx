@@ -176,8 +176,12 @@ export default function GetCreditPage() {
   const [isWithdrawingFromWallet, setIsWithdrawingFromWallet] = useState(false);
   const [withdrawSuccess, setWithdrawSuccess] = useState(false);
 
+  // Withdraw credit to wallet (from credit API)
+  const [isWithdrawingCreditToWallet, setIsWithdrawingCreditToWallet] = useState(false);
+  const [creditWithdrawnToWallet, setCreditWithdrawnToWallet] = useState(false);
+
   // Reclaim verification
-  const { proofs, isLoading: isVerifying, error: verifyError, startVerification } = useReclaim();
+  const { proofs, isLoading: isVerifying, error: verifyError, startVerification, creditData } = useReclaim();
   const isVerified = proofs !== null && proofs.length > 0;
 
   // Hydrate wallet balance from localStorage on mount
@@ -189,6 +193,11 @@ export default function GetCreditPage() {
   useEffect(() => {
     persistWalletBalance(walletBalance);
   }, [walletBalance]);
+
+  // Reset withdrawn state when new credit data arrives
+  useEffect(() => {
+    setCreditWithdrawnToWallet(false);
+  }, [creditData?.session_id]);
 
   /* ---- File handlers ---- */
 
@@ -215,34 +224,35 @@ export default function GetCreditPage() {
 
   /* ---- Submit & Process ---- */
 
-  const canSubmit =
-    claimNumber.trim() &&
-    insurer.trim() &&
-    isClaimAmountValid &&
-    file &&
-    !fileError;
-
   const handleSubmit = async () => {
-    setTouched({ claimNumber: true, insurer: true, claimAmount: true, file: true });
-
-    if (!canSubmit) return;
+    if (!isVerified) return;
 
     // Create & persist claim in localStorage
     const claimId = generateClaimId();
+
+    // Use form values or defaults when form is not shown
+    const effectiveClaimNumber = claimNumber.trim() || `VERIFIED-${claimId.slice(-8)}`;
+    const effectiveInsurer = insurer.trim() || "Verified";
+    const effectiveClaimAmount = isClaimAmountValid ? Number(claimAmount) : 10000;
+
+    setClaimNumber(effectiveClaimNumber);
+    setInsurer(effectiveInsurer);
+    setClaimAmount(effectiveClaimAmount.toString());
+
     const newTokenId = generateTokenId();
     setActiveClaimId(claimId);
     setTokenId(newTokenId);
 
     const newClaim: InsuranceClaim = {
       id: claimId,
-      claimNumber: claimNumber.trim(),
-      insurer: insurer.trim(),
-      claimAmount: Number(claimAmount),
+      claimNumber: effectiveClaimNumber,
+      insurer: effectiveInsurer,
+      claimAmount: effectiveClaimAmount,
       creditAmount: 0,
       tokenId: newTokenId,
       status: "processing",
-      fileName: file.name,
-      fileSize: file.size,
+      fileName: file?.name ?? "",
+      fileSize: file?.size ?? 0,
       createdAt: new Date().toISOString(),
       walletDepositAmount: 0,
       withdrawnAmount: 0,
@@ -260,9 +270,8 @@ export default function GetCreditPage() {
     }
 
     // Calculate credit (mock: 75-85% of claim value)
-    const claim = Number(claimAmount);
     const creditPct = 0.75 + Math.random() * 0.1;
-    const credit = Math.round(claim * creditPct * 100) / 100;
+    const credit = Math.round(effectiveClaimAmount * creditPct * 100) / 100;
 
     setCreditAmount(credit);
 
@@ -317,6 +326,20 @@ export default function GetCreditPage() {
       setWithdrawAmount("");
       setWithdrawSuccess(false);
     }, 2500);
+  };
+
+  /* ---- Withdraw credit to wallet (from credit API) ---- */
+
+  const handleWithdrawCreditToWallet = async () => {
+    if (!creditData) return;
+
+    setIsWithdrawingCreditToWallet(true);
+    await sleep(1500);
+
+    const newBalance = Math.round((walletBalance + creditData.credit_line) * 100) / 100;
+    setWalletBalance(newBalance);
+    setCreditWithdrawnToWallet(true);
+    setIsWithdrawingCreditToWallet(false);
   };
 
   /* ---- Reset ---- */
@@ -476,177 +499,126 @@ export default function GetCreditPage() {
       </Card>
 
       {/* ============================================================ */}
-      {/*  STEP 1: Upload Form                                         */}
+      {/*  STEP 1: Verify Receivables                                  */}
       {/* ============================================================ */}
       {step === "upload" && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg">
               <CreditCard className="size-5 text-primary" />
-              Submit Insurance Claim
+              Verify Receivables
             </CardTitle>
             <CardDescription>
-              Provide your approved insurance claim details. The asset will be
-              verified and tokenized to issue a credit line.
+              Verify your receivables to receive a tokenized credit line.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-5">
-            {/* Claim Number */}
-            <div className="space-y-2">
-              <Label htmlFor="claim-number">Claim Number</Label>
-              <Input
-                id="claim-number"
-                placeholder="e.g. CLM-2025-00123"
-                value={claimNumber}
-                onChange={(e) => setClaimNumber(e.target.value)}
-                onBlur={() =>
-                  setTouched((p) => ({ ...p, claimNumber: true }))
-                }
-                aria-invalid={!!fieldErrors.claimNumber}
-              />
-              {fieldErrors.claimNumber && (
-                <p className="text-xs text-destructive">
-                  {fieldErrors.claimNumber}
-                </p>
-              )}
-            </div>
-
-            {/* Insurer */}
-            <div className="space-y-2">
-              <Label htmlFor="insurer">Insurance Provider</Label>
-              <Input
-                id="insurer"
-                placeholder="e.g. Acme Insurance Co."
-                value={insurer}
-                onChange={(e) => setInsurer(e.target.value)}
-                onBlur={() => setTouched((p) => ({ ...p, insurer: true }))}
-                aria-invalid={!!fieldErrors.insurer}
-              />
-              {fieldErrors.insurer && (
-                <p className="text-xs text-destructive">
-                  {fieldErrors.insurer}
-                </p>
-              )}
-            </div>
-
-            {/* Claim Amount */}
-            <div className="space-y-2">
-              <Label htmlFor="claim-amount">Approved Claim Amount (USD)</Label>
-              <Input
-                id="claim-amount"
-                type="number"
-                min="0"
-                step="0.01"
-                placeholder="e.g. 25000"
-                value={claimAmount}
-                onChange={(e) => setClaimAmount(e.target.value)}
-                onBlur={() =>
-                  setTouched((p) => ({ ...p, claimAmount: true }))
-                }
-                aria-invalid={!!fieldErrors.claimAmount}
-              />
-              {fieldErrors.claimAmount && (
-                <p className="text-xs text-destructive">
-                  {fieldErrors.claimAmount}
-                </p>
-              )}
-            </div>
-
-            {/* File Upload */}
-            <div className="space-y-2">
-              <Label>Claim Document</Label>
-              {fileError && (
-                <p className="text-xs text-destructive">{fileError}</p>
-              )}
-              {!file ? (
-                <div
-                  onDragOver={(e) => {
-                    e.preventDefault();
-                    setDragOver(true);
-                  }}
-                  onDragLeave={() => setDragOver(false)}
-                  onDrop={handleFileDrop}
-                  className={`relative flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed p-8 transition-colors cursor-pointer ${
-                    dragOver
-                      ? "border-primary bg-primary/5"
-                      : "border-border hover:border-primary/50 hover:bg-muted/30"
-                  }`}
-                >
-                  <Upload className="size-8 text-muted-foreground" />
-                  <div className="text-center">
-                    <p className="text-sm font-medium text-foreground">
-                      Drop your file here, or{" "}
-                      <span className="text-primary">browse</span>
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      PDF, JPG, or PNG up to 10MB
-                    </p>
-                  </div>
-                  <input
-                    type="file"
-                    accept=".pdf,.jpg,.jpeg,.png"
-                    onChange={handleFileSelect}
-                    onClick={() => setTouched((p) => ({ ...p, file: true }))}
-                    className="absolute inset-0 opacity-0 cursor-pointer"
-                  />
-                </div>
-              ) : (
-                <div className="flex items-center gap-3 rounded-xl border border-border bg-muted/30 p-3">
-                  <div className="size-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                    <FileText className="size-5 text-primary" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{file.name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {(file.size / 1024).toFixed(1)} KB
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => setFile(null)}
-                    className="size-8 rounded-lg flex items-center justify-center hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
-                  >
-                    <X className="size-4" />
-                  </button>
-                </div>
-              )}
-            </div>
-
-            {/* Verify Receivables */}
-            <div className="space-y-2">
-              <Button
-                className="w-full"
-                size="lg"
-                variant={isVerified ? "outline" : "default"}
-                onClick={startVerification}
-                disabled={isVerifying || isVerified}
-              >
-                {isVerifying ? (
-                  <Loader2 className="size-4 animate-spin" />
-                ) : isVerified ? (
-                  <CheckCircle2 className="size-4 text-emerald-500" />
-                ) : (
-                  <ShieldCheck className="size-4" />
-                )}
-                {isVerifying
-                  ? "Verifying..."
-                  : isVerified
-                    ? "Receivables Verified"
-                    : "Verify Receivables"}
-              </Button>
-              {verifyError && (
-                <p className="text-xs text-destructive">{verifyError}</p>
-              )}
-            </div>
-
-            {/* Submit */}
             <Button
               className="w-full"
               size="lg"
-              onClick={handleSubmit}
-              disabled={!canSubmit || !isVerified}
+              variant={isVerified ? "outline" : "default"}
+              onClick={startVerification}
+              disabled={isVerifying || isVerified}
             >
-              <Upload className="size-4" />
-              Submit & Tokenize Asset
+              {isVerifying ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : isVerified ? (
+                <CheckCircle2 className="size-4 text-emerald-500" />
+              ) : (
+                <ShieldCheck className="size-4" />
+              )}
+              {isVerifying
+                ? "Verifying..."
+                : isVerified
+                  ? "Receivables Verified"
+                  : "Verify Receivables"}
+            </Button>
+            {verifyError && (
+              <p className="text-xs text-destructive">{verifyError}</p>
+            )}
+            {isVerified && (
+              <Button
+                className="w-full"
+                size="lg"
+                onClick={handleSubmit}
+              >
+                Continue
+              </Button>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ============================================================ */}
+      {/*  Credit Data (from API when MOBILE_SUBMITTED)                 */}
+      {/* ============================================================ */}
+      {creditData && (
+        <Card className="border-emerald-500/20">
+          <CardHeader>
+            <div className="flex items-center gap-3">
+              <div className="size-11 rounded-xl bg-emerald-500/15 flex items-center justify-center">
+                <CheckCircle2 className="size-6 text-emerald-500" />
+              </div>
+              <div>
+                <CardTitle className="text-lg">Credit Approved</CardTitle>
+                <CardDescription>
+                  Your receivables have been verified and credit is ready.
+                </CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-5">
+            <div className="rounded-xl bg-muted/50 p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">User ID</span>
+                <span className="text-sm font-mono truncate max-w-[200px]">
+                  {creditData.user_id}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">Extracted Username</span>
+                <span className="text-sm font-medium">{creditData.extracted_username}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">Context</span>
+                <span className="text-sm truncate max-w-[180px]">
+                  {creditData.context_message}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">Session ID</span>
+                <span className="text-sm font-mono">{creditData.session_id}</span>
+              </div>
+              <div className="border-t border-border pt-3 flex items-center justify-between">
+                <span className="text-sm font-medium text-foreground">
+                  Credit Line
+                </span>
+                <span className="text-lg font-semibold text-emerald-500 tabular-nums">
+                  {creditData.currency === "USDT"
+                    ? `${creditData.credit_line.toLocaleString("en-US", { minimumFractionDigits: 2 })} USDT`
+                    : formatCurrency(creditData.credit_line)}
+                </span>
+              </div>
+            </div>
+
+            <Button
+              className="w-full"
+              size="lg"
+              onClick={handleWithdrawCreditToWallet}
+              disabled={isWithdrawingCreditToWallet || creditWithdrawnToWallet}
+            >
+              {isWithdrawingCreditToWallet ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : creditWithdrawnToWallet ? (
+                <CheckCircle2 className="size-4 text-emerald-500" />
+              ) : (
+                <ArrowDownToLine className="size-4" />
+              )}
+              {isWithdrawingCreditToWallet
+                ? "Withdrawing..."
+                : creditWithdrawnToWallet
+                  ? "Withdrawn to Wallet"
+                  : "Withdraw to Wallet"}
             </Button>
           </CardContent>
         </Card>
