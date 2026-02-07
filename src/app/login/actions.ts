@@ -80,6 +80,40 @@ export async function signInWithGoogle() {
   }
 }
 
+export async function resetPassword(formData: FormData) {
+  const supabase = await createClient();
+  const email = formData.get("email") as string;
+
+  if (!email) {
+    return { error: "Please enter your email address" };
+  }
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    return { error: "Please enter a valid email address" };
+  }
+
+  const headersList = await headers();
+  const origin = headersList.get("origin") || headersList.get("host");
+  const protocol = headersList.get("x-forwarded-proto") || "http";
+  const baseUrl = origin?.startsWith("http")
+    ? origin
+    : `${protocol}://${origin}`;
+
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${baseUrl}/auth/callback?next=/dashboard`,
+  });
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  return {
+    success: true,
+    message: "Check your email for a password reset link.",
+  };
+}
+
 export async function signOut() {
   const supabase = await createClient();
   await supabase.auth.signOut();

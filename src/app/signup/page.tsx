@@ -17,6 +17,8 @@ import { Separator } from "@/components/ui/separator";
 import { signUpWithPassword, signInWithGoogle } from "@/app/login/actions";
 import { CheckCircle2, Loader2 } from "lucide-react";
 
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 export default function SignUpPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -25,10 +27,16 @@ export default function SignUpPage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const [isGoogleRedirecting, setIsGoogleRedirecting] = useState(false);
 
   const handleSignUp = () => {
     setError(null);
     setSuccess(null);
+
+    if (!EMAIL_REGEX.test(email)) {
+      setError("Please enter a valid email address");
+      return;
+    }
 
     if (password !== confirmPassword) {
       setError("Passwords do not match");
@@ -57,13 +65,17 @@ export default function SignUpPage() {
 
   const handleGoogleSignUp = () => {
     setError(null);
+    setIsGoogleRedirecting(true);
     startTransition(async () => {
       const result = await signInWithGoogle();
       if (result?.error) {
         setError(result.error);
+        setIsGoogleRedirecting(false);
       }
     });
   };
+
+  const isLoading = isPending || isGoogleRedirecting;
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
@@ -98,7 +110,7 @@ export default function SignUpPage() {
                   placeholder="John Doe"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  disabled={isPending}
+                  disabled={isLoading}
                 />
               </div>
               <div className="space-y-2">
@@ -109,7 +121,7 @@ export default function SignUpPage() {
                   placeholder="name@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  disabled={isPending}
+                  disabled={isLoading}
                 />
               </div>
               <div className="space-y-2">
@@ -120,7 +132,7 @@ export default function SignUpPage() {
                   placeholder="At least 6 characters"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  disabled={isPending}
+                  disabled={isLoading}
                 />
               </div>
               <div className="space-y-2">
@@ -141,7 +153,7 @@ export default function SignUpPage() {
                       handleSignUp();
                     }
                   }}
-                  disabled={isPending}
+                  disabled={isLoading}
                 />
               </div>
               <Button
@@ -149,14 +161,18 @@ export default function SignUpPage() {
                 size="lg"
                 onClick={handleSignUp}
                 disabled={
-                  isPending ||
+                  isLoading ||
                   !email.trim() ||
                   !password.trim() ||
                   !confirmPassword.trim()
                 }
               >
-                {isPending ? <Loader2 className="animate-spin" /> : null}
-                {isPending ? "Creating account..." : "Create Account"}
+                {isPending && !isGoogleRedirecting ? (
+                  <Loader2 className="animate-spin" />
+                ) : null}
+                {isPending && !isGoogleRedirecting
+                  ? "Creating account..."
+                  : "Create Account"}
               </Button>
             </>
           )}
@@ -175,27 +191,33 @@ export default function SignUpPage() {
                 size="lg"
                 className="w-full"
                 onClick={handleGoogleSignUp}
-                disabled={isPending}
+                disabled={isLoading}
               >
-                <svg className="size-4" viewBox="0 0 24 24">
-                  <path
-                    d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"
-                    fill="#4285F4"
-                  />
-                  <path
-                    d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                    fill="#34A853"
-                  />
-                  <path
-                    d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-                    fill="#FBBC05"
-                  />
-                  <path
-                    d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-                    fill="#EA4335"
-                  />
-                </svg>
-                Continue with Google
+                {isGoogleRedirecting ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <svg className="size-4" viewBox="0 0 24 24">
+                    <path
+                      d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"
+                      fill="#4285F4"
+                    />
+                    <path
+                      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                      fill="#34A853"
+                    />
+                    <path
+                      d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+                      fill="#FBBC05"
+                    />
+                    <path
+                      d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                      fill="#EA4335"
+                    />
+                  </svg>
+                )}
+                {isGoogleRedirecting
+                  ? "Redirecting to Google..."
+                  : "Continue with Google"}
               </Button>
             </>
           )}

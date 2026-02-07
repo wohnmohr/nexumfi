@@ -91,8 +91,8 @@ a {
   --secondary-foreground: #1a1a1a;
   --muted: #FEF0F5;
   --muted-foreground: #71717A;
-  --accent: #00CCFF;
-  --accent-foreground: #ffffff;
+  --accent: #E8B4F8;
+  --accent-foreground: #1a1a1a;
   --destructive: #EF4444;
   --border: #FCCEE4;
   --input: #FCCEE4;
@@ -125,8 +125,8 @@ a {
   --secondary-foreground: #E4E4E7;
   --muted: #1A1520;
   --muted-foreground: #A1A1AA;
-  --accent: #00DDFF;
-  --accent-foreground: #002833;
+  --accent: #C084FC;
+  --accent-foreground: #F4F4F5;
   --destructive: #FF3355;
   --border: rgba(255, 68, 180, 0.15);
   --input: rgba(255, 68, 180, 0.18);
@@ -152,6 +152,13 @@ a {
   }
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+/* Safe area support for iOS notch / home indicator */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
   }
 }
 
