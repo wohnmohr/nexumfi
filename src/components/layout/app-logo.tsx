@@ -9,8 +9,8 @@ export function AppLogo({ href = "/", className }: AppLogoProps) {
   const content = (
     <>
       <svg
-        width="36"
-        height="36"
+        width="44"
+        height="44"
         viewBox="0 0 120 120"
         xmlns="http://www.w3.org/2000/svg"
         className="shrink-0"
