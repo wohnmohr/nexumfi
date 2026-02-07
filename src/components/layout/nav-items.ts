@@ -1,11 +1,13 @@
 import {
   LayoutDashboard,
-  Compass,
   Wallet,
-  Bell,
   Settings,
   User,
   CreditCard,
+  Gift,
+  ArrowDownToLine,
+  PieChart,
+  Database,
   type LucideIcon,
 } from "lucide-react";
 
@@ -15,20 +17,39 @@ export interface NavItem {
   icon: LucideIcon;
 }
 
-export const mainNavItems: NavItem[] = [
+/** Nav items shown on /dashboard (non-DAP) routes */
+export const dashboardNavItems: NavItem[] = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { label: "Get Credit", href: "/dashboard/get-credit", icon: CreditCard },
   { label: "Profile", href: "/dashboard/profile", icon: User },
-  { label: "Explore", href: "/explore", icon: Compass },
-  { label: "Wallet", href: "/wallet", icon: Wallet },
-  { label: "Activity", href: "/activity", icon: Bell },
   { label: "Settings", href: "/settings", icon: Settings },
 ];
 
-export const bottomNavItems: NavItem[] = [
+/** Nav items shown on /dashboard/dap/* routes */
+export const dapNavItems: NavItem[] = [
+  { label: "Deposit", href: "/dashboard/dap/deposit", icon: ArrowDownToLine },
+  { label: "Portfolio", href: "/dashboard/dap/portfolio", icon: PieChart },
+  { label: "Rewards", href: "/dashboard/dap/rewards", icon: Gift },
+  { label: "Data Room", href: "/dashboard/dap/data-room", icon: Database },
+];
+
+/** Bottom nav items for /dashboard (non-DAP) routes */
+export const dashboardBottomNavItems: NavItem[] = [
   { label: "Home", href: "/dashboard", icon: LayoutDashboard },
   { label: "Credit", href: "/dashboard/get-credit", icon: CreditCard },
   { label: "Profile", href: "/dashboard/profile", icon: User },
-  { label: "Explore", href: "/explore", icon: Compass },
   { label: "Wallet", href: "/wallet", icon: Wallet },
 ];
+
+/** Bottom nav items for /dashboard/dap/* routes */
+export const dapBottomNavItems: NavItem[] = [
+  { label: "Deposit", href: "/dashboard/dap/deposit", icon: ArrowDownToLine },
+  { label: "Portfolio", href: "/dashboard/dap/portfolio", icon: PieChart },
+  { label: "Rewards", href: "/dashboard/dap/rewards", icon: Gift },
+  { label: "Data Room", href: "/dashboard/dap/data-room", icon: Database },
+];
+
+/** Helper: check if current pathname is inside DAP section */
+export function isDapRoute(pathname: string) {
+  return pathname.startsWith("/dashboard/dap");
+}

@@ -110,7 +110,7 @@ export function getVendorById(id: string): Vendor | undefined {
   return getVendors().find((v) => v.id === id);
 }
 
-export function getStatusLabel(status: Vendor["status"]): string {
+export function getStatusLabel(status: Vendor["status"] | string): string {
   switch (status) {
     case "draft":
       return "Draft";
@@ -120,18 +120,30 @@ export function getStatusLabel(status: Vendor["status"]): string {
       return "Verified";
     case "rejected":
       return "Rejected";
+    case "ONBOARDED":
+      return "Onboarded";
+    case "KYC_PENDING":
+      return "KYC Pending";
+    case "ACTIVE":
+      return "Active";
+    case "REGISTERED":
+      return "Registered";
     default:
-      return status;
+      return typeof status === "string" ? status.replace(/_/g, " ") : String(status);
   }
 }
 
-export function getStatusColor(status: Vendor["status"]): string {
+export function getStatusColor(status: Vendor["status"] | string): string {
   switch (status) {
     case "draft":
       return "text-muted-foreground";
     case "pending_verification":
+    case "KYC_PENDING":
       return "text-amber-500";
     case "verified":
+    case "ONBOARDED":
+    case "ACTIVE":
+    case "CLEAR":
       return "text-emerald-500";
     case "rejected":
       return "text-destructive";

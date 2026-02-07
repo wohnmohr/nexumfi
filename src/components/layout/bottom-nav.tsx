@@ -3,15 +3,16 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { bottomNavItems } from "./nav-items";
+import { dashboardBottomNavItems, dapBottomNavItems, isDapRoute } from "./nav-items";
 
 export function BottomNav() {
   const pathname = usePathname();
+  const navItems = isDapRoute(pathname) ? dapBottomNavItems : dashboardBottomNavItems;
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-sidebar-border bg-sidebar/95 backdrop-blur-lg md:hidden">
       <div className="flex items-center justify-around px-1 safe-area-bottom">
-        {bottomNavItems.map((item) => {
+        {navItems.map((item) => {
           const isActive =
             pathname === item.href ||
             pathname.startsWith(item.href + "/");

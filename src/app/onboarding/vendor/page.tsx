@@ -21,6 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { createClient } from "@/lib/supabase/client";
 import {
   Building2,
   Loader2,
@@ -228,10 +229,24 @@ export default function VendorOnboardingPage() {
     }
 
     try {
+      const supabase = createClient();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session?.access_token) {
+        setSubmitError("Not authenticated. Please sign in and try again.");
+        setIsSubmitting(false);
+        return;
+      }
+
       const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
       const res = await fetch(`${baseUrl}/api/vendors`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
         body: JSON.stringify(body),
       });
 

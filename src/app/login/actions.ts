@@ -23,7 +23,6 @@ export async function signInWithPassword(formData: FormData) {
     return { error: error.message };
   }
 
-  // Redirect to the intended page (onboarding, dashboard, etc.)
   redirect(next);
 }
 

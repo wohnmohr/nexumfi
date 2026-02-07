@@ -21,32 +21,119 @@ import {
   XCircle,
   AlertCircle,
   User,
-  Calendar,
   Loader2,
+  MapPin,
+  Phone,
+  CreditCard,
+  Receipt,
 } from "lucide-react";
 import {
-  getVendors,
   getEntityLabel,
   getStatusLabel,
   getStatusColor,
   maskValue,
-  type Vendor,
+  type Country,
 } from "@/lib/vendors";
 import { createClient } from "@/lib/supabase/client";
 
 /* ------------------------------------------------------------------ */
-/*  Types for /api/policy-holders/me response                          */
+/*  Types for /api/me response                                         */
 /* ------------------------------------------------------------------ */
 
-interface PolicyHolderMe {
+interface AddressStructured {
+  line1?: string;
+  line2?: string;
+  city?: string;
+  state?: string;
+  postal_code?: string;
+  country?: string;
+}
+
+interface Signatory {
+  name?: string;
+  role?: string;
+  email?: string;
+  phone?: string | null;
+  id_type?: string;
+  id_number_encrypted?: string;
+  verification_status?: string;
+}
+
+interface KycIndiaApi {
+  entity_type: string;
+  pan: string;
+  gstin?: string | null;
+  cin_or_llpin?: string | null;
+  udyam_number?: string | null;
+  registered_address?: AddressStructured | null;
+  bank_account?: unknown | null;
+  signatory?: Signatory | null;
+}
+
+interface KycUsApi {
+  entity_type: string;
+  ein: string;
+  state_of_incorporation: string;
+}
+
+interface InvoiceProfile {
+  approval_source?: string;
+  avg_invoice_value_min?: number;
+  avg_invoice_value_max?: number;
+  payment_cycle_days?: number;
+}
+
+interface PolicyHolderApi {
   _id: string;
   country: "US" | "IN";
   full_name: string;
-  dob: string;
-  identity: Record<string, unknown>;
+  dob?: string;
+  identity?: Record<string, unknown>;
   email: string;
   status: "REGISTERED" | "KYC_PENDING" | "ACTIVE";
   created_at: string;
+}
+
+interface VendorApi {
+  _id: string;
+  buyer_country: "IN" | "US";
+  legal_name: string;
+  address?: string;
+  contact_email: string;
+  address_structured?: AddressStructured | null;
+  kyc_india?: KycIndiaApi | null;
+  kyc_us?: KycUsApi | null;
+  invoice_profile?: InvoiceProfile | null;
+  status: string;
+  kyc_verified_at?: string | null;
+  kyc_provider?: string | null;
+  aml_status?: string | null;
+  aml_checked_at?: string | null;
+  aml_provider?: string | null;
+  created_at: string;
+}
+
+interface ProfileMeApi {
+  sub: string;
+  user_type: "vendor" | "policy_holder";
+  policy_holder: PolicyHolderApi | null;
+  vendor: VendorApi | null;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Helpers                                                             */
+/* ------------------------------------------------------------------ */
+
+function formatAddress(addr: AddressStructured | null | undefined): string {
+  if (!addr) return "—";
+  const parts = [
+    addr.line1,
+    addr.line2,
+    [addr.city, addr.state].filter(Boolean).join(", "),
+    addr.postal_code,
+    addr.country,
+  ].filter(Boolean);
+  return parts.join(", ") || "—";
 }
 
 /* ------------------------------------------------------------------ */
@@ -54,21 +141,17 @@ interface PolicyHolderMe {
 /* ------------------------------------------------------------------ */
 
 export default function ProfilePage() {
-  const [vendors, setVendors] = useState<Vendor[]>([]);
-  const [me, setMe] = useState<PolicyHolderMe | null>(null);
-  const [meLoading, setMeLoading] = useState(true);
-  const [meError, setMeError] = useState("");
-  const [isLoaded, setIsLoaded] = useState(false);
+  const [profile, setProfile] = useState<ProfileMeApi | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    setVendors(getVendors());
-    setIsLoaded(true);
-    fetchMe();
+    fetchProfile();
   }, []);
 
-  async function fetchMe() {
-    setMeLoading(true);
-    setMeError("");
+  async function fetchProfile() {
+    setLoading(true);
+    setError("");
 
     try {
       const supabase = createClient();
@@ -77,13 +160,13 @@ export default function ProfilePage() {
       } = await supabase.auth.getSession();
 
       if (!session?.access_token) {
-        setMeError("Not authenticated");
-        setMeLoading(false);
+        setError("Not authenticated");
+        setLoading(false);
         return;
       }
 
       const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
-      const res = await fetch(`${baseUrl}/api/policy-holders/me`, {
+      const res = await fetch(`${baseUrl}/api/me`, {
         headers: {
           Authorization: `Bearer ${session.access_token}`,
         },
@@ -96,21 +179,16 @@ export default function ProfilePage() {
         );
       }
 
-      const data: PolicyHolderMe = await res.json();
-      setMe(data);
+      const data: ProfileMeApi = await res.json();
+      setProfile(data);
     } catch (err) {
-      setMeError(
+      setError(
         err instanceof Error ? err.message : "Failed to load profile"
       );
     } finally {
-      setMeLoading(false);
+      setLoading(false);
     }
   }
-
-  /* While hydrating, show nothing to avoid flash */
-  if (!isLoaded) return null;
-
-  const hasVendors = vendors.length > 0;
 
   return (
     <div className="p-4 md:p-6 space-y-6 max-w-3xl">
@@ -123,7 +201,7 @@ export default function ProfilePage() {
       </div>
 
       {/* ============================================================ */}
-      {/*  Account / Me card                                            */}
+      {/*  Account card                                                 */}
       {/* ============================================================ */}
       <Card>
         <CardHeader>
@@ -136,7 +214,7 @@ export default function ProfilePage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {meLoading && (
+          {loading && (
             <div className="flex items-center justify-center py-8">
               <Loader2 className="size-5 animate-spin text-muted-foreground" />
               <span className="ml-2 text-sm text-muted-foreground">
@@ -145,61 +223,113 @@ export default function ProfilePage() {
             </div>
           )}
 
-          {!meLoading && meError && (
+          {!loading && error && (
             <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-4">
-              <p className="text-sm text-destructive">{meError}</p>
+              <p className="text-sm text-destructive">{error}</p>
             </div>
           )}
 
-          {!meLoading && me && (
+          {!loading && profile && (
             <div className="space-y-5">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <InfoItem
-                  icon={User}
-                  label="Full Name"
-                  value={me.full_name}
-                />
-                <InfoItem icon={Mail} label="Email" value={me.email} />
-                <InfoItem
-                  icon={Globe}
-                  label="Country"
-                  value={me.country === "IN" ? "India" : "United States"}
-                />
-                <InfoItem
-                  icon={Calendar}
-                  label="Date of Birth"
-                  value={me.dob}
-                />
-                <InfoItem
-                  icon={Clock}
-                  label="Joined"
-                  value={new Date(me.created_at).toLocaleDateString("en-US", {
-                    year: "numeric",
-                    month: "short",
-                    day: "numeric",
-                  })}
-                />
-                <InfoItem
-                  icon={ShieldCheck}
-                  label="Status"
-                  value={
-                    me.status === "ACTIVE"
-                      ? "Active"
-                      : me.status === "KYC_PENDING"
-                        ? "KYC Pending"
-                        : "Registered"
-                  }
-                />
-              </div>
+              {profile.vendor ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <InfoItem
+                    icon={User}
+                    label="Legal Name"
+                    value={profile.vendor.legal_name}
+                  />
+                  <InfoItem
+                    icon={Mail}
+                    label="Contact Email"
+                    value={profile.vendor.contact_email}
+                  />
+                  <InfoItem
+                    icon={Globe}
+                    label="Country"
+                    value={
+                      profile.vendor.buyer_country === "IN"
+                        ? "India"
+                        : "United States"
+                    }
+                  />
+                  <InfoItem
+                    icon={Clock}
+                    label="Joined"
+                    value={new Date(
+                      profile.vendor.created_at
+                    ).toLocaleDateString("en-US", {
+                      year: "numeric",
+                      month: "short",
+                      day: "numeric",
+                    })}
+                  />
+                  <InfoItem
+                    icon={ShieldCheck}
+                    label="Status"
+                    value={getStatusLabel(profile.vendor.status)}
+                  />
+                  <InfoItem
+                    icon={FileText}
+                    label="User Type"
+                    value={profile.user_type}
+                  />
+                </div>
+              ) : profile.policy_holder ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <InfoItem
+                    icon={User}
+                    label="Full Name"
+                    value={profile.policy_holder.full_name}
+                  />
+                  <InfoItem
+                    icon={Mail}
+                    label="Email"
+                    value={profile.policy_holder.email}
+                  />
+                  <InfoItem
+                    icon={Globe}
+                    label="Country"
+                    value={
+                      profile.policy_holder.country === "IN"
+                        ? "India"
+                        : "United States"
+                    }
+                  />
+                  <InfoItem
+                    icon={Clock}
+                    label="Joined"
+                    value={new Date(
+                      profile.policy_holder.created_at
+                    ).toLocaleDateString("en-US", {
+                      year: "numeric",
+                      month: "short",
+                      day: "numeric",
+                    })}
+                  />
+                  <InfoItem
+                    icon={ShieldCheck}
+                    label="Status"
+                    value={getStatusLabel(profile.policy_holder.status)}
+                  />
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  No profile data available.
+                </p>
+              )}
             </div>
           )}
         </CardContent>
       </Card>
 
       {/* ============================================================ */}
-      {/*  Vendor / Buyer cards                                         */}
+      {/*  Vendor / Buyer card                                          */}
       {/* ============================================================ */}
-      {!hasVendors && (
+      {!loading && profile?.vendor && (
+        <VendorCard vendor={profile.vendor} />
+      )}
+
+      {!loading && profile && !profile.vendor && (
         <Card>
           <CardContent className="py-16 flex flex-col items-center text-center">
             <div className="size-14 rounded-2xl bg-muted flex items-center justify-center mb-4">
@@ -213,10 +343,6 @@ export default function ProfilePage() {
           </CardContent>
         </Card>
       )}
-
-      {vendors.map((vendor) => (
-        <VendorCard key={vendor.id} vendor={vendor} />
-      ))}
     </div>
   );
 }
@@ -225,12 +351,11 @@ export default function ProfilePage() {
 /*  Vendor detail card                                                 */
 /* ================================================================== */
 
-function VendorCard({ vendor }: { vendor: Vendor }) {
-  const country = vendor.buyer_country;
-  const entityType =
-    country === "IN"
-      ? vendor.kyc_india?.entity_type
-      : vendor.kyc_us?.entity_type;
+function VendorCard({ vendor }: { vendor: VendorApi }) {
+  const country = vendor.buyer_country as Country;
+  const kycIndia = vendor.kyc_india;
+  const kycUs = vendor.kyc_us;
+  const entityType = kycIndia?.entity_type ?? kycUs?.entity_type;
 
   return (
     <Card>
@@ -245,7 +370,7 @@ function VendorCard({ vendor }: { vendor: Vendor }) {
                 {vendor.legal_name}
               </CardTitle>
               <CardDescription className="flex items-center gap-1.5 mt-0.5">
-                <span className="font-mono text-xs">{vendor.id}</span>
+                <span className="font-mono text-xs">{vendor._id}</span>
               </CardDescription>
             </div>
           </div>
@@ -286,6 +411,19 @@ function VendorCard({ vendor }: { vendor: Vendor }) {
           />
         </div>
 
+        {/* Address */}
+        {(vendor.address || vendor.address_structured) && (
+          <div className="rounded-xl border border-border bg-muted/30 p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <MapPin className="size-4 text-primary" />
+              <h3 className="text-sm font-semibold">Address</h3>
+            </div>
+            <p className="text-sm">
+              {vendor.address ?? formatAddress(vendor.address_structured)}
+            </p>
+          </div>
+        )}
+
         {/* KYC Details */}
         <div className="rounded-xl border border-border bg-muted/30 p-4 space-y-4">
           <div className="flex items-center gap-2">
@@ -294,34 +432,161 @@ function VendorCard({ vendor }: { vendor: Vendor }) {
           </div>
 
           {/* India KYC */}
-          {country === "IN" && vendor.kyc_india && (
+          {country === "IN" && kycIndia && (
             <div className="space-y-3">
-              <KycRow label="PAN" value={vendor.kyc_india.pan} mono />
-              {vendor.kyc_india.cin_or_llpin && (
+              <KycRow label="PAN" value={kycIndia.pan} mono />
+              {kycIndia.gstin && (
+                <KycRow label="GSTIN" value={kycIndia.gstin} mono />
+              )}
+              {kycIndia.udyam_number && (
                 <KycRow
-                  label="CIN / LLPIN"
-                  value={vendor.kyc_india.cin_or_llpin}
+                  label="Udyam Number"
+                  value={kycIndia.udyam_number}
                   mono
                 />
+              )}
+              {kycIndia.cin_or_llpin && (
+                <KycRow
+                  label="CIN / LLPIN"
+                  value={kycIndia.cin_or_llpin}
+                  mono
+                />
+              )}
+              {kycIndia.registered_address && (
+                <div className="pt-2 border-t border-border">
+                  <p className="text-[11px] text-muted-foreground uppercase tracking-wider font-medium mb-1">
+                    Registered Address
+                  </p>
+                  <p className="text-sm">
+                    {formatAddress(kycIndia.registered_address)}
+                  </p>
+                </div>
               )}
             </div>
           )}
 
           {/* US KYC */}
-          {country === "US" && vendor.kyc_us && (
+          {country === "US" && kycUs && (
             <div className="space-y-3">
               <KycRow
                 label="EIN"
-                value={maskValue(vendor.kyc_us.ein.replace(/\D/g, ""))}
+                value={maskValue(kycUs.ein.replace(/\D/g, ""))}
                 mono
               />
               <KycRow
                 label="State of Incorporation"
-                value={vendor.kyc_us.state_of_incorporation}
+                value={kycUs.state_of_incorporation}
+              />
+            </div>
+          )}
+
+          {/* KYC Verified */}
+          {vendor.kyc_verified_at && (
+            <div className="pt-2 border-t border-border">
+              <KycRow
+                label="KYC Verified"
+                value={new Date(
+                  vendor.kyc_verified_at
+                ).toLocaleDateString("en-US", {
+                  year: "numeric",
+                  month: "short",
+                  day: "numeric",
+                })}
               />
             </div>
           )}
         </div>
+
+        {/* Signatory */}
+        {kycIndia?.signatory && (
+          <div className="rounded-xl border border-border bg-muted/30 p-4 space-y-3">
+            <div className="flex items-center gap-2">
+              <User className="size-4 text-primary" />
+              <h3 className="text-sm font-semibold">Signatory</h3>
+              {kycIndia.signatory.verification_status === "VERIFIED" && (
+                <Badge
+                  variant="secondary"
+                  className="text-emerald-500 text-[10px]"
+                >
+                  <CheckCircle2 className="size-2.5" />
+                  Verified
+                </Badge>
+              )}
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <InfoItem
+                icon={User}
+                label="Name"
+                value={kycIndia.signatory.name ?? "—"}
+              />
+              <InfoItem
+                icon={FileText}
+                label="Role"
+                value={kycIndia.signatory.role ?? "—"}
+              />
+              {kycIndia.signatory.email && (
+                <InfoItem
+                  icon={Mail}
+                  label="Email"
+                  value={kycIndia.signatory.email}
+                />
+              )}
+              {kycIndia.signatory.phone && (
+                <InfoItem
+                  icon={Phone}
+                  label="Phone"
+                  value={kycIndia.signatory.phone}
+                />
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* AML Status */}
+        {vendor.aml_status && (
+          <div className="rounded-xl border border-border bg-muted/30 p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="size-4 text-primary" />
+                <span className="text-sm font-semibold">AML Status</span>
+              </div>
+              <StatusBadge status={vendor.aml_status} />
+            </div>
+            {vendor.aml_checked_at && (
+              <p className="text-xs text-muted-foreground mt-2">
+                Checked {new Date(vendor.aml_checked_at).toLocaleDateString()}
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* Invoice Profile */}
+        {vendor.invoice_profile && (
+          <div className="rounded-xl border border-border bg-muted/30 p-4 space-y-3">
+            <div className="flex items-center gap-2">
+              <Receipt className="size-4 text-primary" />
+              <h3 className="text-sm font-semibold">Invoice Profile</h3>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <InfoItem
+                icon={FileText}
+                label="Approval Source"
+                value={
+                  vendor.invoice_profile.approval_source ?? "—"
+                }
+              />
+              <InfoItem
+                icon={CreditCard}
+                label="Payment Cycle"
+                value={
+                  vendor.invoice_profile.payment_cycle_days
+                    ? `${vendor.invoice_profile.payment_cycle_days} days`
+                    : "—"
+                }
+              />
+            </div>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
@@ -331,15 +596,19 @@ function VendorCard({ vendor }: { vendor: Vendor }) {
 /*  Sub-components                                                     */
 /* ================================================================== */
 
-function StatusBadge({ status }: { status: Vendor["status"] }) {
+function StatusBadge({ status }: { status: string }) {
   const colorClass = getStatusColor(status);
 
   const icon =
-    status === "verified" ? (
+    status === "verified" ||
+    status === "ONBOARDED" ||
+    status === "ACTIVE" ||
+    status === "CLEAR" ? (
       <CheckCircle2 className="size-3" />
     ) : status === "rejected" ? (
       <XCircle className="size-3" />
-    ) : status === "pending_verification" ? (
+    ) : status === "pending_verification" ||
+      status === "KYC_PENDING" ? (
       <AlertCircle className="size-3" />
     ) : (
       <Clock className="size-3" />

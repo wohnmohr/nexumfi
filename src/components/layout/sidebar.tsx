@@ -5,12 +5,14 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Loader2, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { mainNavItems } from "./nav-items";
+import { dashboardNavItems, dapNavItems, isDapRoute } from "./nav-items";
 import { signOut } from "@/app/login/actions";
 
 export function Sidebar() {
   const pathname = usePathname();
   const [isSigningOut, startTransition] = useTransition();
+  const inDap = isDapRoute(pathname);
+  const navItems = inDap ? dapNavItems : dashboardNavItems;
 
   const handleSignOut = () => {
     startTransition(async () => {
@@ -23,9 +25,9 @@ export function Sidebar() {
       {/* Navigation */}
       <nav className="flex-1 space-y-1 p-3 pt-4">
         <p className="px-3 pb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          Menu
+          {inDap ? "DAP" : "Menu"}
         </p>
-        {mainNavItems.map((item) => {
+        {navItems.map((item) => {
           const isActive =
             pathname === item.href ||
             pathname.startsWith(item.href + "/");

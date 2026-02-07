@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import { Loader2, LogOut, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { mainNavItems } from "./nav-items";
+import { dashboardNavItems, dapNavItems, isDapRoute } from "./nav-items";
 import { signOut } from "@/app/login/actions";
 
 interface MobileNavProps {
@@ -88,9 +88,9 @@ export function MobileNav({ isOpen, onClose }: MobileNavProps) {
         {/* Navigation */}
         <nav className="flex-1 overflow-y-auto space-y-1 p-3 pt-4">
           <p className="px-3 pb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Menu
+            {isDapRoute(pathname) ? "DAP" : "Menu"}
           </p>
-          {mainNavItems.map((item) => {
+          {(isDapRoute(pathname) ? dapNavItems : dashboardNavItems).map((item) => {
             const isActive =
               pathname === item.href ||
               pathname.startsWith(item.href + "/");
