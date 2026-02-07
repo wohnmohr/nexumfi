@@ -501,7 +501,7 @@ export default function GetCreditPage() {
       {/* ============================================================ */}
       {/*  STEP 1: Verify Receivables                                  */}
       {/* ============================================================ */}
-      {step === "upload" && (
+      {step === "upload" && !creditData && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg">
