@@ -1,6 +1,6 @@
 /**
- * AML check: returns blocked reason if vendor has AML status that is not CLEAR.
- * Used by login flow and middleware to block entire account access.
+ * AML check: returns blocked reason if vendor or policy_holder has AML status
+ * that is not CLEAR. Used by login flow and middleware to block entire account access.
  */
 
 export type AmlBlockedReason = "FLAGGED" | "ERROR";
@@ -25,11 +25,13 @@ export async function checkAmlStatus(
 
     const data = (await res.json()) as {
       vendor?: { aml_status?: string | null } | null;
+      policy_holder?: { aml_status?: string | null } | null;
     };
-    const amlStatus = data.vendor?.aml_status;
+
+    const amlStatus =
+      data.vendor?.aml_status ?? data.policy_holder?.aml_status;
 
     if (
-      !data.vendor ||
       amlStatus == null ||
       amlStatus === "" ||
       amlStatus === "CLEAR"

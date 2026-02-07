@@ -59,7 +59,8 @@ export async function updateSession(request: NextRequest) {
     pathname.startsWith("/contact") ||
     pathname.startsWith("/privacy") ||
     pathname.startsWith("/terms") ||
-    pathname.startsWith("/demo");
+    pathname.startsWith("/demo") ||
+    pathname.startsWith("/onboarding");
 
   // Redirect unauthenticated users to home with auth modal (with return URL)
   if (!user && !isPublicRoute) {

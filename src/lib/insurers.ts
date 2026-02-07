@@ -146,3 +146,38 @@ export function maskValue(value: string, visibleChars = 4): string {
   if (value.length <= visibleChars) return value;
   return "\u2022".repeat(value.length - visibleChars) + value.slice(-visibleChars);
 }
+
+/* ---- Simplified insurer KYC (policy holder) ---- */
+
+export interface SimpleInsurer {
+  id: string;
+  country: "IN" | "US";
+  full_name: string;
+  dob: string;
+  identity_document_type: "PAN" | "SSN";
+  identity_value: string; /* PAN or SSN number */
+  email: string;
+  status: "pending_verification" | "verified" | "rejected";
+  created_at: string;
+  updated_at: string;
+}
+
+const SIMPLE_STORAGE_KEY = "hypermonks_simple_insurer";
+
+export function generateSimpleInsurerId(): string {
+  return `INS-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+}
+
+export function getSimpleInsurer(): SimpleInsurer | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(SIMPLE_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function saveSimpleInsurer(insurer: SimpleInsurer): void {
+  localStorage.setItem(SIMPLE_STORAGE_KEY, JSON.stringify(insurer));
+}

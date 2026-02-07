@@ -128,6 +128,14 @@ export function getStatusLabel(status: Vendor["status"] | string): string {
       return "Active";
     case "REGISTERED":
       return "Registered";
+    case "CLEAR":
+      return "Clear";
+    case "FLAGGED":
+      return "Flagged";
+    case "ERROR":
+      return "Error";
+    case "PENDING":
+      return "Pending";
     default:
       return typeof status === "string" ? status.replace(/_/g, " ") : String(status);
   }
@@ -146,7 +154,11 @@ export function getStatusColor(status: Vendor["status"] | string): string {
     case "CLEAR":
       return "text-emerald-500";
     case "rejected":
+    case "FLAGGED":
+    case "ERROR":
       return "text-destructive";
+    case "PENDING":
+      return "text-amber-500";
     default:
       return "";
   }
