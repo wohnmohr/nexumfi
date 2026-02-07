@@ -22,8 +22,8 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "HyperMonks",
-  description: "HyperMonks - Your Stellar Dashboard",
+  title: "Nexum",
+  description: "Nexum - Your Stellar Dashboard",
 };
 
 export default function RootLayout({

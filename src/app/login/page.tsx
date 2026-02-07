@@ -30,6 +30,7 @@ export default function LoginPage() {
 
 function LoginForm() {
   const searchParams = useSearchParams();
+  const nextUrl = searchParams.get("next") || "";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -79,6 +80,7 @@ function LoginForm() {
       const formData = new FormData();
       formData.set("email", email);
       formData.set("password", password);
+      if (nextUrl) formData.set("next", nextUrl);
       const result = await signInWithPassword(formData);
       if (result?.error) {
         setError(result.error);
@@ -90,7 +92,7 @@ function LoginForm() {
     setError(null);
     setIsGoogleRedirecting(true);
     startTransition(async () => {
-      const result = await signInWithGoogle();
+      const result = await signInWithGoogle(nextUrl || undefined);
       if (result?.error) {
         setError(result.error);
         setIsGoogleRedirecting(false);
@@ -99,6 +101,9 @@ function LoginForm() {
   };
 
   const isLoading = isPending || isGoogleRedirecting;
+
+  // Build signup link preserving next param
+  const signupHref = nextUrl ? `/signup?next=${encodeURIComponent(nextUrl)}` : "/signup";
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
@@ -222,7 +227,7 @@ function LoginForm() {
           </Button>
           <p className="text-center text-sm text-muted-foreground">
             Don&apos;t have an account?{" "}
-            <Link href="/signup" className="text-primary hover:underline">
+            <Link href={signupHref} className="text-primary hover:underline">
               Sign up
             </Link>
           </p>

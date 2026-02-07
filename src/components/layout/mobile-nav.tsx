@@ -64,13 +64,15 @@ export function MobileNav({ isOpen, onClose }: MobileNavProps) {
         {/* Drawer header */}
         <div className="flex items-center justify-between h-14 px-4 border-b border-sidebar-border shrink-0">
           <div className="flex items-center gap-2">
-            <div className="size-8 rounded-lg bg-primary flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-sm">
-                H
-              </span>
-            </div>
+            <svg width="36" height="36" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" className="shrink-0">
+              <g transform="translate(15,15)">
+                <rect x="0" y="20" width="70" height="50" rx="10" fill="#00CCFF" opacity="0.35"/>
+                <rect x="10" y="15" width="70" height="50" rx="10" fill="#00CCFF" opacity="0.6"/>
+                <rect x="20" y="10" width="70" height="50" rx="10" fill="#FF1493"/>
+              </g>
+            </svg>
             <span className="font-semibold text-sidebar-foreground">
-              HyperMonks
+              Nexum
             </span>
           </div>
           <Button

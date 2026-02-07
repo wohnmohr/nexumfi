@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { Suspense, useState, useTransition } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import {
   Card,
   CardContent,
@@ -13,13 +14,37 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { signUpWithPassword, signInWithGoogle } from "@/app/login/actions";
-import { CheckCircle2, Loader2 } from "lucide-react";
+import {
+  CheckCircle2,
+  Loader2,
+  Building2,
+  ShieldCheck,
+  ArrowRight,
+} from "lucide-react";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function SignUpPage() {
+  return (
+    <Suspense>
+      <SignUpForm />
+    </Suspense>
+  );
+}
+
+function SignUpForm() {
+  const searchParams = useSearchParams();
+  const role = searchParams.get("role") as "vendor" | "insurer" | null;
+  const nextParam = searchParams.get("next") || "";
+
+  // Derive onboarding URL from role
+  const onboardingUrl = role
+    ? `/onboarding/${role}`
+    : nextParam || "/dashboard";
+
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -79,7 +104,12 @@ export default function SignUpPage() {
     setSuccess(null);
 
     // Touch all fields to reveal any remaining errors
-    setTouched({ name: true, email: true, password: true, confirmPassword: true });
+    setTouched({
+      name: true,
+      email: true,
+      password: true,
+      confirmPassword: true,
+    });
 
     if (
       !name.trim() ||
@@ -110,7 +140,7 @@ export default function SignUpPage() {
     setError(null);
     setIsGoogleRedirecting(true);
     startTransition(async () => {
-      const result = await signInWithGoogle();
+      const result = await signInWithGoogle(onboardingUrl);
       if (result?.error) {
         setError(result.error);
         setIsGoogleRedirecting(false);
@@ -120,15 +150,36 @@ export default function SignUpPage() {
 
   const isLoading = isPending || isGoogleRedirecting;
 
+  // Build login link preserving the onboarding next URL
+  const loginHref = `/login?next=${encodeURIComponent(onboardingUrl)}`;
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md">
-        <CardHeader className="space-y-1 text-center">
+        <CardHeader className="space-y-2 text-center">
+          {/* Role badge */}
+          {role && (
+            <div className="flex justify-center">
+              <Badge
+                variant="secondary"
+                className="gap-1.5 px-3 py-1 text-xs"
+              >
+                {role === "vendor" ? (
+                  <Building2 className="size-3" />
+                ) : (
+                  <ShieldCheck className="size-3" />
+                )}
+                {role === "vendor" ? "Vendor" : "Insurer"} Registration
+              </Badge>
+            </div>
+          )}
           <CardTitle className="text-2xl font-semibold">
             Create an account
           </CardTitle>
           <CardDescription>
-            Enter your details to get started
+            {role
+              ? `Sign up to begin your ${role} onboarding`
+              : "Enter your details to get started"}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -137,13 +188,46 @@ export default function SignUpPage() {
               {error}
             </div>
           )}
-          {success && (
-            <div className="rounded-lg bg-emerald-500/10 border border-emerald-500/20 px-3 py-2 text-sm text-emerald-600 dark:text-emerald-400 flex items-start gap-2">
-              <CheckCircle2 className="size-4 mt-0.5 shrink-0" />
-              <span>{success}</span>
+
+          {success ? (
+            <div className="space-y-4">
+              <div className="rounded-lg bg-emerald-500/10 border border-emerald-500/20 px-3 py-2 text-sm text-emerald-600 dark:text-emerald-400 flex items-start gap-2">
+                <CheckCircle2 className="size-4 mt-0.5 shrink-0" />
+                <span>{success}</span>
+              </div>
+
+              {/* Guided next step */}
+              <div className="rounded-xl bg-muted/50 p-4 space-y-3">
+                <p className="text-sm font-medium">What&apos;s next?</p>
+                <ol className="space-y-2 text-sm text-muted-foreground">
+                  <li className="flex items-start gap-2">
+                    <span className="size-5 rounded-full bg-primary/15 text-primary text-xs flex items-center justify-center shrink-0 mt-0.5 font-medium">
+                      1
+                    </span>
+                    Confirm your email address
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="size-5 rounded-full bg-primary/15 text-primary text-xs flex items-center justify-center shrink-0 mt-0.5 font-medium">
+                      2
+                    </span>
+                    Sign in to your account
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="size-5 rounded-full bg-primary/15 text-primary text-xs flex items-center justify-center shrink-0 mt-0.5 font-medium">
+                      3
+                    </span>
+                    Complete your {role || "business"} verification
+                  </li>
+                </ol>
+                <Link href={loginHref}>
+                  <Button className="w-full mt-2" variant="outline">
+                    Sign In to Continue
+                    <ArrowRight className="size-4" />
+                  </Button>
+                </Link>
+              </div>
             </div>
-          )}
-          {!success && (
+          ) : (
             <>
               <div className="space-y-2">
                 <Label htmlFor="name">Full Name</Label>
@@ -161,7 +245,9 @@ export default function SignUpPage() {
                   disabled={isLoading}
                 />
                 {fieldErrors.name && (
-                  <p className="text-xs text-destructive">{fieldErrors.name}</p>
+                  <p className="text-xs text-destructive">
+                    {fieldErrors.name}
+                  </p>
                 )}
               </div>
               <div className="space-y-2">
@@ -180,7 +266,9 @@ export default function SignUpPage() {
                   disabled={isLoading}
                 />
                 {fieldErrors.email && (
-                  <p className="text-xs text-destructive">{fieldErrors.email}</p>
+                  <p className="text-xs text-destructive">
+                    {fieldErrors.email}
+                  </p>
                 )}
               </div>
               <div className="space-y-2">
@@ -199,7 +287,9 @@ export default function SignUpPage() {
                   disabled={isLoading}
                 />
                 {fieldErrors.password && (
-                  <p className="text-xs text-destructive">{fieldErrors.password}</p>
+                  <p className="text-xs text-destructive">
+                    {fieldErrors.password}
+                  </p>
                 )}
               </div>
               <div className="space-y-2">
@@ -229,7 +319,9 @@ export default function SignUpPage() {
                   disabled={isLoading}
                 />
                 {fieldErrors.confirmPassword && (
-                  <p className="text-xs text-destructive">{fieldErrors.confirmPassword}</p>
+                  <p className="text-xs text-destructive">
+                    {fieldErrors.confirmPassword}
+                  </p>
                 )}
               </div>
               <Button
@@ -301,7 +393,7 @@ export default function SignUpPage() {
           )}
           <p className="text-center text-sm text-muted-foreground">
             Already have an account?{" "}
-            <Link href="/login" className="text-primary hover:underline">
+            <Link href={loginHref} className="text-primary hover:underline">
               Sign in
             </Link>
           </p>

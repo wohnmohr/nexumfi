@@ -35,30 +35,34 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Redirect unauthenticated users to login page
-  // Exclude public routes: /login, /auth, / (home)
-  if (
-    !user &&
-    !request.nextUrl.pathname.startsWith("/login") &&
-    !request.nextUrl.pathname.startsWith("/signup") &&
-    !request.nextUrl.pathname.startsWith("/forgot-password") &&
-    !request.nextUrl.pathname.startsWith("/auth") &&
-    !request.nextUrl.pathname.startsWith("/demo") &&
-    request.nextUrl.pathname !== "/"
-  ) {
+  const pathname = request.nextUrl.pathname;
+
+  // Public routes that don't require authentication
+  const isPublicRoute =
+    pathname === "/" ||
+    pathname.startsWith("/login") ||
+    pathname.startsWith("/signup") ||
+    pathname.startsWith("/forgot-password") ||
+    pathname.startsWith("/auth") ||
+    pathname.startsWith("/demo");
+
+  // Redirect unauthenticated users to login page (with return URL)
+  if (!user && !isPublicRoute) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
+    url.searchParams.set("next", pathname);
     return NextResponse.redirect(url);
   }
 
-  // Redirect authenticated users away from login/signup/home to dashboard
-  if (
-    user &&
-    (request.nextUrl.pathname === "/" ||
-      request.nextUrl.pathname.startsWith("/login") ||
-      request.nextUrl.pathname.startsWith("/signup") ||
-      request.nextUrl.pathname.startsWith("/forgot-password"))
-  ) {
+  // Redirect authenticated users away from auth pages to dashboard
+  // (but NOT from / — landing page is viewable when logged in,
+  //  middleware-level redirect only for login/signup/forgot-password)
+  const isAuthPage =
+    pathname.startsWith("/login") ||
+    pathname.startsWith("/signup") ||
+    pathname.startsWith("/forgot-password");
+
+  if (user && (pathname === "/" || isAuthPage)) {
     const url = request.nextUrl.clone();
     url.pathname = "/dashboard";
     return NextResponse.redirect(url);

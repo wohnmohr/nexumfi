@@ -18,6 +18,7 @@ export interface NavItem {
 export const mainNavItems: NavItem[] = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { label: "Get Credit", href: "/dashboard/get-credit", icon: CreditCard },
+  { label: "Profile", href: "/dashboard/profile", icon: User },
   { label: "Explore", href: "/explore", icon: Compass },
   { label: "Wallet", href: "/wallet", icon: Wallet },
   { label: "Activity", href: "/activity", icon: Bell },
@@ -27,7 +28,7 @@ export const mainNavItems: NavItem[] = [
 export const bottomNavItems: NavItem[] = [
   { label: "Home", href: "/dashboard", icon: LayoutDashboard },
   { label: "Credit", href: "/dashboard/get-credit", icon: CreditCard },
+  { label: "Profile", href: "/dashboard/profile", icon: User },
   { label: "Explore", href: "/explore", icon: Compass },
   { label: "Wallet", href: "/wallet", icon: Wallet },
-  { label: "Activity", href: "/activity", icon: Bell },
 ];
