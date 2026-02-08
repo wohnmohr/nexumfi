@@ -21,7 +21,7 @@ export default function HomePage() {
         <div className="max-w-6xl mx-auto px-4 py-2.5 flex items-center justify-center gap-2 text-sm font-medium">
           <Sparkles className="size-4 shrink-0" />
           <span>
-            Your receivables. Your runway. — Built for vendors & policy holders
+            Your receivables. Your runway. — Built for businesses & individuals
           </span>
         </div>
       </div>
@@ -42,19 +42,19 @@ export default function HomePage() {
             Funded by what you&apos;re owed
           </div>
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight leading-tight">
-            Stop waiting for payment.
+            Your receivables.
             <br />
-            <span className="text-primary">Get funded now.</span>
+            <span className="text-primary">Your runway.</span>
           </h1>
           <p className="text-muted-foreground mt-4 text-base sm:text-lg max-w-xl mx-auto leading-relaxed">
-            Turn invoices and claims into cash. Minutes, not months. Built for
-            vendors and policy holders who don&apos;t want to wait.
+            Turn invoices, insurance claims, and payouts into instant
+            working capital powered by Stellar.
           </p>
         </div>
 
         {/* ---- Role cards ---- */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 w-full max-w-2xl sm:items-stretch">
-          {/* Vendor Company card */}
+          {/* Business card */}
           <Link
             href="/?auth=open&role=vendor"
             className="group relative flex flex-col rounded-2xl border border-border bg-card p-6 sm:p-8 transition-all duration-300 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/5"
@@ -62,13 +62,13 @@ export default function HomePage() {
             <div className="size-12 rounded-xl bg-primary/10 flex items-center justify-center mb-5">
               <Building2 className="size-6 text-primary" />
             </div>
-            <h2 className="text-xl font-semibold mb-2">I&apos;m a Vendor</h2>
+            <h2 className="text-xl font-semibold mb-2">Business</h2>
             <p className="text-sm text-muted-foreground mb-5 leading-relaxed">
-              Invoices stuck in limbo? Turn them into cash. Same-day credit, no
-              more chasing.
+              Receivables sitting idle? Turn them into working capital.
+              Same-day credit, no more waiting.
             </p>
             <ul className="space-y-2.5 mb-6">
-              <BulletItem text="Credit against invoices — instantly" />
+              <BulletItem text="Credit against receivables — instantly" />
               <BulletItem text="Minutes, not weeks" />
               <BulletItem text="Transparent. No hidden fees." />
             </ul>
@@ -78,7 +78,7 @@ export default function HomePage() {
             </span>
           </Link>
 
-          {/* Policy Holder card */}
+          {/* Individual card */}
           <Link
             href="/?auth=open&role=insurer"
             className="group relative flex flex-col rounded-2xl border border-border bg-card p-6 sm:p-8 transition-all duration-300 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/5"
@@ -86,11 +86,9 @@ export default function HomePage() {
             <div className="size-12 rounded-xl bg-emerald-500/10 flex items-center justify-center mb-5">
               <ShieldCheck className="size-6 text-emerald-500" />
             </div>
-            <h2 className="text-xl font-semibold mb-2">
-              I&apos;m a Policy Holder
-            </h2>
+            <h2 className="text-xl font-semibold mb-2">Individual</h2>
             <p className="text-sm text-muted-foreground mb-5 leading-relaxed">
-              Claim pending? Don&apos;t wait. Get your funds now — bridge the gap
+              Owed money? Don&apos;t wait. Get your funds now — bridge the gap
               until settlement.
             </p>
             <ul className="space-y-2.5 mb-6">
