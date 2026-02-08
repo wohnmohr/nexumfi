@@ -2,7 +2,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { Proof, ReclaimProofRequest } from '@reclaimprotocol/js-sdk';
 import { apiFetch } from '@/lib/api-fetch';
-import { createClient } from '@/lib/supabase/client';
 
 const STATUS_POLL_INTERVAL_MS = 3000;
 
@@ -20,7 +19,6 @@ export function useReclaim() {
   const [proofs, setProofs] = useState<Proof[] | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [creditData, setCreditData] = useState<CreditData | null>(null);
   const [sessionStatus, setSessionStatus] = useState<string | null>(null);
   const statusPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -38,17 +36,6 @@ export function useReclaim() {
   useEffect(() => {
     return () => clearStatusPoll();
   }, [clearStatusPoll]);
-
-  const setMockCreditData = useCallback(() => {
-    setCreditData({
-      user_id: 'mock-user-123',
-      credit_line_xlm: 5000,
-      currency: 'USDT',
-      extracted_username: 'Test User',
-      context_message: 'Mock credit for testing withdraw API',
-      session_id: `mock-session-${Date.now()}`,
-    });
-  }, []);
 
   const startVerification = useCallback(async () => {
     try {
@@ -94,39 +81,10 @@ export function useReclaim() {
           
           if (status === 'MOBILE_SUBMITTED') {
             clearStatusPoll();
-            setIsLoading(true); // Show loading while fetching credit data
-            const supabase = createClient();
-            const { data: { session } } = await supabase.auth.getSession();
-            const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? '';
-            const creditUrl = baseUrl ? `${baseUrl}/api/credit` : '/api/credit';
-            const headers: HeadersInit = { 'Content-Type': 'application/json' };
-            if (session?.access_token) {
-              headers['Authorization'] = `Bearer ${session.access_token}`;
-            }
-            const creditRes = await apiFetch(creditUrl, {
-              method: 'POST',
-              headers,
-              body: JSON.stringify(data),
-            });
-            if (creditRes.ok) {
-              const creditJson = await creditRes.json();
-              if (creditJson?.user_id != null && creditJson?.credit_line_xlm != null) {
-                setCreditData({
-                  user_id: creditJson.user_id,
-                  credit_line_xlm: creditJson.credit_line_xlm,
-                  currency: creditJson.currency ?? 'USDT',
-                  extracted_username: creditJson.extracted_username ?? '',
-                  context_message: creditJson.context_message ?? '',
-                  session_id: creditJson.session_id ?? '',
-                  raw_session: creditJson.raw_session,
-                });
-              }
-            }
-            // Always set loading to false after credit API call completes
             setIsLoading(false);
           }
-        } catch {
-          // Ignore poll errors; startSession handles the main flow
+        } catch (pollErr) {
+          console.error('[useReclaim] Poll error:', pollErr);
         }
       }, STATUS_POLL_INTERVAL_MS);
 
@@ -135,47 +93,6 @@ export function useReclaim() {
           clearStatusPoll();
           reclaimProofRequest.closeModal();
           setProofs(proofs as unknown as Proof[]);
-          console.log(proofs as unknown as Proof[]);
-          // Fetch credit data from status so auto-advance works even if poll never saw MOBILE_SUBMITTED
-          try {
-            const res = await apiFetch(statusUrl, {
-              method: 'GET',
-              headers: { 'Content-Type': 'application/json' },
-            });
-            const data = await res.json();
-            const status = data?.session?.status;
-            if (status === 'MOBILE_SUBMITTED') {
-              const supabase = createClient();
-              const { data: { session } } = await supabase.auth.getSession();
-              const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? '';
-              const creditUrl = baseUrl ? `${baseUrl}/api/credit` : '/api/credit';
-              const headers: HeadersInit = { 'Content-Type': 'application/json' };
-              if (session?.access_token) {
-                headers['Authorization'] = `Bearer ${session.access_token}`;
-              }
-              const creditRes = await apiFetch(creditUrl, {
-                method: 'POST',
-                headers,
-                body: JSON.stringify(data),
-              });
-              if (creditRes.ok) {
-                const creditJson = await creditRes.json();
-                if (creditJson?.user_id != null && creditJson?.credit_line_xlm != null) {
-                  setCreditData({
-                    user_id: creditJson.user_id,
-                    credit_line_xlm: creditJson.credit_line_xlm,
-                    currency: creditJson.currency ?? 'USDT',
-                    extracted_username: creditJson.extracted_username ?? '',
-                    context_message: creditJson.context_message ?? '',
-                    session_id: creditJson.session_id ?? '',
-                    raw_session: creditJson.raw_session,
-                  });
-                }
-              }
-            }
-          } catch {
-            // Non-fatal; proofs are still set
-          }
           setIsLoading(false);
         },
         onError: (err: unknown) => {
@@ -192,5 +109,5 @@ export function useReclaim() {
     }
   }, [resetLoading, clearStatusPoll]);
 
-  return { proofs, isLoading, error, startVerification, creditData, setMockCreditData, sessionStatus };
+  return { proofs, isLoading, error, startVerification, sessionStatus };
 }

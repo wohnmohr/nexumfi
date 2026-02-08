@@ -158,23 +158,27 @@ export default function GetCreditPage() {
   const [loanLtv, setLoanLtv] = useState<bigint | null>(null);
   const [creditData, setCreditData] = useState<CreditData | null>(null);
   // Reclaim verification
-  const { isLoading: isVerifying, error: verifyError, startVerification, creditData: reclaimCreditData, sessionStatus } = useReclaim();
+  const { isLoading: isVerifying, error: verifyError, startVerification, proofs, sessionStatus } = useReclaim();
 
   // Existing active loan check
   const [hasActiveLoan, setHasActiveLoan] = useState(false);
   const [activeLoanChecked, setActiveLoanChecked] = useState(false);
 
-  // Derive creditData from Reclaim hook, mapping currency to XLM SAC for testnet
+  // When Reclaim verification succeeds (proofs arrive), set static credit data
   const NATIVE_XLM_SAC = "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC";
 
-
-
-    useEffect(()=>{
-      if(reclaimCreditData){
-        setCreditData({ ...reclaimCreditData, currency: NATIVE_XLM_SAC })
-      }
-    },[reclaimCreditData])
-  console.log(creditData, 	reclaimCreditData, "credit data");
+  useEffect(() => {
+    if (proofs && !creditData) {
+      setCreditData({
+        user_id: 'reclaim-verified-user',
+        credit_line_xlm: 5000,
+        currency: NATIVE_XLM_SAC,
+        extracted_username: 'Verified User',
+        context_message: 'Credit approved via Reclaim verification',
+        session_id: `reclaim-${Date.now()}`,
+      });
+    }
+  }, [proofs, creditData]);
 
   // Fetch XLM balance from Horizon
   const fetchBalance = useCallback(async (pubKey: string) => {
@@ -261,18 +265,16 @@ export default function GetCreditPage() {
     fetchBalance(walletKeys.publicKey);
   }, [walletKeys, fetchBalance]);
 
-  // When verification completes (creditData arrives), auto-advance to tokenize step
-  // This happens automatically when MOBILE_SUBMITTED status triggers credit API fetch
+  // When verification completes (creditData set from proofs), auto-advance to tokenize step
   useEffect(() => {
-    if (reclaimCreditData && creditData && step === "upload") {
-      // Auto-advance to tokenize step when credit data is ready
+    if (proofs && creditData && step === "upload") {
       setStep("tokenize");
       setMintResult(null);
       setMintError(null);
       setBorrowResult(null);
       setBorrowError(null);
     }
-  }, [reclaimCreditData, creditData, step]);
+  }, [proofs, creditData, step]);
 
   /* ---- Mint receivable on-chain ---- */
 
@@ -683,7 +685,7 @@ export default function GetCreditPage() {
           )}
 
           {/* Fetching credit data after mobile submission */}
-          {isVerifying && sessionStatus === "MOBILE_SUBMITTED" && !reclaimCreditData && (
+          {isVerifying && sessionStatus === "MOBILE_SUBMITTED" && !proofs && (
             <Card className="border-emerald-500/20 bg-emerald-500/5">
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
@@ -710,7 +712,7 @@ export default function GetCreditPage() {
           )}
 
           {/* Show credit approved card when creditData is ready (even if still in upload step) */}
-          {reclaimCreditData && creditData && step === "upload" && (
+          {proofs && creditData && step === "upload" && (
             <Card className="border-emerald-500/20">
               <CardHeader>
                 <div className="flex items-center gap-3">
@@ -774,7 +776,7 @@ export default function GetCreditPage() {
           )}
 
           {/* Initial verification card - only show if no creditData yet */}
-          {!reclaimCreditData && !isVerifying && !sessionStatus && (
+          {!proofs && !isVerifying && !sessionStatus && (
             <Card>
               <CardHeader>
                 <div className="flex items-center gap-3">
