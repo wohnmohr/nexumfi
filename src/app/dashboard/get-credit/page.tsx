@@ -157,7 +157,7 @@ export default function GetCreditPage() {
   const [loanDetails, setLoanDetails] = useState<Loan | null>(null);
   const [loanLtv, setLoanLtv] = useState<bigint | null>(null);
   // Reclaim verification
-  const { isLoading: isVerifying, error: verifyError, startVerification, creditData: reclaimCreditData } = useReclaim();
+  const { isLoading: isVerifying, error: verifyError, startVerification, creditData: reclaimCreditData, sessionStatus } = useReclaim();
 
   // Existing active loan check
   const [hasActiveLoan, setHasActiveLoan] = useState(false);
@@ -255,6 +255,7 @@ export default function GetCreditPage() {
   }, [walletKeys, fetchBalance]);
 
   // When verification completes (creditData arrives), auto-advance to tokenize step
+  // This happens automatically when MOBILE_SUBMITTED status triggers credit API fetch
   useEffect(() => {
     if (reclaimCreditData && step === "upload") {
       setStep("tokenize");
@@ -647,42 +648,97 @@ export default function GetCreditPage() {
       {/*  STEP 1: Verify                                               */}
       {/* ============================================================ */}
       {step === "upload" && !hasActiveLoan && (
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-3">
-              <div className="size-11 rounded-xl bg-primary/15 flex items-center justify-center">
-                <ShieldCheck className="size-6 text-primary" />
-              </div>
-              <div>
-                <CardTitle className="text-lg">Verify Your Receivables</CardTitle>
+        <>
+          {/* Monitoring session status - waiting for mobile submission */}
+          {isVerifying && sessionStatus && sessionStatus !== "MOBILE_SUBMITTED" && (
+            <Card className="border-primary/20">
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Loader2 className="size-5 animate-spin text-primary" />
+                  Monitoring Session Status
+                </CardTitle>
                 <CardDescription>
-                  Complete verification via Reclaim to prove your receivables and get a credit line.
+                  Waiting for verification submission. Current status: <span className="font-medium">{sessionStatus}</span>
                 </CardDescription>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {verifyError && (
-              <div className="rounded-xl bg-destructive/10 border border-destructive/20 p-3">
-                <p className="text-xs text-destructive">{verifyError}</p>
-              </div>
-            )}
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <div className="size-2 rounded-full bg-primary animate-pulse" />
+                    <span>Please complete verification on your mobile device</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
-            <Button
-              className="w-full"
-              size="lg"
-              onClick={startVerification}
-              disabled={isVerifying}
-            >
-              {isVerifying ? (
-                <Loader2 className="size-4 animate-spin" />
-              ) : (
-                <ShieldCheck className="size-4" />
-              )}
-              {isVerifying ? "Verifying..." : "Verify with Reclaim"}
-            </Button>
-          </CardContent>
-        </Card>
+          {/* Fetching credit data after mobile submission */}
+          {isVerifying && sessionStatus === "MOBILE_SUBMITTED" && !reclaimCreditData && (
+            <Card className="border-emerald-500/20 bg-emerald-500/5">
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Loader2 className="size-5 animate-spin text-emerald-500" />
+                  Processing Credit Data
+                </CardTitle>
+                <CardDescription>
+                  Verification submitted successfully. Fetching your credit line...
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <CheckCircle2 className="size-4 text-emerald-500" />
+                    <span>Mobile submission received</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Loader2 className="size-4 animate-spin text-primary" />
+                    <span>Retrieving credit data from API...</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Initial verification card */}
+          {!isVerifying && !sessionStatus && (
+            <Card>
+              <CardHeader>
+                <div className="flex items-center gap-3">
+                  <div className="size-11 rounded-xl bg-primary/15 flex items-center justify-center">
+                    <ShieldCheck className="size-6 text-primary" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-lg">Verify Your Receivables</CardTitle>
+                    <CardDescription>
+                      Complete verification via Reclaim to prove your receivables and get a credit line.
+                    </CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {verifyError && (
+                  <div className="rounded-xl bg-destructive/10 border border-destructive/20 p-3">
+                    <p className="text-xs text-destructive">{verifyError}</p>
+                  </div>
+                )}
+
+                <Button
+                  className="w-full"
+                  size="lg"
+                  onClick={startVerification}
+                  disabled={isVerifying}
+                >
+                  {isVerifying ? (
+                    <Loader2 className="size-4 animate-spin" />
+                  ) : (
+                    <ShieldCheck className="size-4" />
+                  )}
+                  {isVerifying ? "Verifying..." : "Verify with Reclaim"}
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+        </>
       )}
 
       {/* ============================================================ */}

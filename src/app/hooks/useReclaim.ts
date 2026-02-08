@@ -21,6 +21,7 @@ export function useReclaim() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [creditData, setCreditData] = useState<CreditData | null>(null);
+  const [sessionStatus, setSessionStatus] = useState<string | null>(null);
   const statusPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const resetLoading = useCallback(() => {
@@ -85,8 +86,15 @@ export function useReclaim() {
           });
           const data = await res.json();
           const status = data?.session?.status;
+          
+          // Update session status for UI monitoring
+          if (status) {
+            setSessionStatus(status);
+          }
+          
           if (status === 'MOBILE_SUBMITTED') {
             clearStatusPoll();
+            setIsLoading(true); // Show loading while fetching credit data
             const supabase = createClient();
             const { data: { session } } = await supabase.auth.getSession();
             const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? '';
@@ -112,7 +120,12 @@ export function useReclaim() {
                   session_id: creditJson.session_id ?? '',
                   raw_session: creditJson.raw_session,
                 });
+                setIsLoading(false); // Credit data loaded, ready for next step
+              } else {
+                setIsLoading(false);
               }
+            } else {
+              setIsLoading(false);
             }
           }
         } catch {
@@ -142,5 +155,5 @@ export function useReclaim() {
     }
   }, [resetLoading, clearStatusPoll]);
 
-  return { proofs, isLoading, error, startVerification, creditData, setMockCreditData };
+  return { proofs, isLoading, error, startVerification, creditData, setMockCreditData, sessionStatus };
 }
