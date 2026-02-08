@@ -21,6 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { apiFetch } from "@/lib/api-fetch";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 import { AppLogo } from "@/components/layout/app-logo";
@@ -215,7 +216,7 @@ export default function InsurerOnboardingPage() {
         return;
       }
 
-      const res = await fetch(`${baseUrl}/api/policy-holders`, {
+      const res = await apiFetch(`${baseUrl}/api/policy-holders`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -560,7 +561,7 @@ export default function InsurerOnboardingPage() {
                     aria-invalid={!!getFieldError("identity_value")}
                     className={form.country === "IN" ? "uppercase" : ""}
                   />
-                  <p className="text-[11px] text-muted-foreground">
+                  <p className="text-xs text-muted-foreground">
                     {form.country === "IN"
                       ? "10-character Permanent Account Number"
                       : "9-digit Social Security Number"}

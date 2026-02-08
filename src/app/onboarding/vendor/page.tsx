@@ -21,6 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { apiFetch } from "@/lib/api-fetch";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 import { AppLogo } from "@/components/layout/app-logo";
@@ -244,7 +245,7 @@ export default function VendorOnboardingPage() {
       }
 
       const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
-      const res = await fetch(`${baseUrl}/api/vendors`, {
+      const res = await apiFetch(`${baseUrl}/api/vendors`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -664,7 +665,7 @@ export default function VendorOnboardingPage() {
                     aria-invalid={!!getFieldError("pan")}
                     className="uppercase"
                   />
-                  <p className="text-[11px] text-muted-foreground">
+                  <p className="text-xs text-muted-foreground">
                     10-character Permanent Account Number
                   </p>
                   {getFieldError("pan") && (
@@ -696,7 +697,7 @@ export default function VendorOnboardingPage() {
                       aria-invalid={!!getFieldError("cin_or_llpin")}
                       className="uppercase"
                     />
-                    <p className="text-[11px] text-muted-foreground">
+                    <p className="text-xs text-muted-foreground">
                       {form.entity_type === "company"
                         ? "Corporate Identification Number issued by MCA"
                         : "LLP Identification Number"}
@@ -730,7 +731,7 @@ export default function VendorOnboardingPage() {
                     onBlur={() => touchField("ein")}
                     aria-invalid={!!getFieldError("ein")}
                   />
-                  <p className="text-[11px] text-muted-foreground">
+                  <p className="text-xs text-muted-foreground">
                     9-digit Employer Identification Number from the IRS
                   </p>
                   {getFieldError("ein") && (

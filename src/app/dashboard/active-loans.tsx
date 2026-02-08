@@ -289,7 +289,7 @@ export function ActiveLoans({ onHasLoans }: { onHasLoans?: (has: boolean) => voi
 
       {/* Pool info bar */}
       {(poolState || borrowConfig) && (
-        <div className="rounded-xl bg-muted/30 border border-border p-3 flex flex-wrap gap-x-6 gap-y-1 text-xs text-muted-foreground">
+        <div className="rounded-xl bg-muted/30 border border-border p-3 flex flex-wrap gap-x-6 gap-y-1 text-xs text-foreground/60">
           {poolState && (
             <>
               <span>
@@ -512,7 +512,7 @@ export function ActiveLoans({ onHasLoans }: { onHasLoans?: (has: boolean) => voi
 
                     {/* Receivable IDs */}
                     <div className="pt-2 border-t border-border">
-                      <p className="text-[11px] text-muted-foreground mb-1.5">
+                      <p className="text-xs text-muted-foreground mb-1.5">
                         Collateral Receivables
                       </p>
                       <div className="flex flex-wrap gap-1.5">
@@ -592,7 +592,7 @@ function Detail({
     <div className="flex items-start gap-2">
       <Icon className="size-3.5 text-muted-foreground mt-0.5 shrink-0" />
       <div className="min-w-0">
-        <p className="text-[11px] text-muted-foreground">{label}</p>
+        <p className="text-xs text-muted-foreground">{label}</p>
         <p
           className={`text-sm truncate ${mono ? "font-mono" : ""} ${highlight ? "text-emerald-500 font-medium" : ""}`}
         >

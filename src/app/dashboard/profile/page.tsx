@@ -9,6 +9,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { apiFetch } from "@/lib/api-fetch";
 import { cn } from "@/lib/utils";
 import {
   Building2,
@@ -180,7 +181,7 @@ export default function ProfilePage() {
       }
 
       const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
-      const res = await fetch(`${baseUrl}/api/me`, {
+      const res = await apiFetch(`${baseUrl}/api/me`, {
         headers: {
           Authorization: `Bearer ${session.access_token}`,
         },
@@ -205,7 +206,7 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="p-4 md:p-6 space-y-6 max-w-3xl">
+    <div className="p-4 md:p-6 space-y-6 max-w-3xl mx-auto">
       {/* Page header */}
       <div>
         <h1 className="text-xl md:text-2xl font-semibold">Profile</h1>
@@ -647,7 +648,7 @@ function VendorCard({ vendor }: { vendor: VendorApi }) {
               )}
               {kycIndia.registered_address && (
                 <div className="pt-2 border-t border-border">
-                  <p className="text-[11px] text-muted-foreground uppercase tracking-wider font-medium mb-1">
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium mb-1">
                     Registered Address
                   </p>
                   <p className="text-sm">
@@ -836,7 +837,7 @@ function InfoItem({
         <Icon className="size-4 text-muted-foreground" />
       </div>
       <div className="min-w-0">
-        <p className="text-[11px] text-muted-foreground uppercase tracking-wider font-medium">
+        <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">
           {label}
         </p>
         <p className="text-sm font-medium truncate mt-0.5">{value}</p>

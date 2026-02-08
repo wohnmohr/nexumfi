@@ -187,7 +187,7 @@ export default function DataRoomPage() {
   const maxDuration = Number(borrowConfig.max_loan_duration) / 86400; // seconds to days
 
   return (
-    <div className="p-4 md:p-6 space-y-6 max-w-5xl">
+    <div className="p-4 md:p-6 space-y-6 max-w-5xl mx-auto">
       {/* Page header */}
       <div className="flex items-center justify-between">
         <div>
@@ -304,7 +304,7 @@ function StatCard({
             <Icon className={`size-5 ${accent}`} />
           </div>
           <div>
-            <p className="text-[11px] text-muted-foreground uppercase tracking-wider font-medium">{label}</p>
+            <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">{label}</p>
             <p className="text-lg font-bold tabular-nums">{value}</p>
           </div>
         </div>

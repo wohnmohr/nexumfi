@@ -463,7 +463,7 @@ export default function GetCreditPage() {
   /* ---------------------------------------------------------------- */
 
   return (
-    <div className="p-4 md:p-6 space-y-6 max-w-3xl">
+    <div className="p-4 md:p-6 space-y-6 max-w-3xl mx-auto">
       {/* Page header */}
       <div>
         <h1 className="text-xl md:text-2xl font-semibold">Get Credit</h1>
@@ -591,7 +591,7 @@ export default function GetCreditPage() {
               )}
             </div>
             {borrowConfig && (
-              <div className="mt-3 pt-3 border-t border-border flex flex-wrap gap-x-6 gap-y-1 text-xs text-muted-foreground">
+              <div className="mt-3 pt-3 border-t border-border flex flex-wrap gap-x-6 gap-y-1 text-xs text-foreground/60">
                 <span>
                   Interest Rate: <span className="font-medium text-foreground">{bpsToPercent(borrowConfig.base_interest_rate)}%</span>
                 </span>
