@@ -87,10 +87,15 @@ export async function signInWithGoogle(next?: string) {
     ? origin
     : `${protocol}://${origin}`;
 
+  // Prefer request origin so callbacks work on Vercel (and preview URLs). Fall back to env only when origin is localhost or missing.
+  const isLocalhost =
+    !dynamicOrigin ||
+    /^https?:\/\/localhost(:\d+)?$/i.test(dynamicOrigin);
   const baseUrl =
-    process.env.NODE_ENV === "development"
+    dynamicOrigin && !isLocalhost
       ? dynamicOrigin
-      : "https://jpaxekkutxkvnrsxvkry.supabase.co";
+      : (process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") ??
+          "https://nexumfi.vercel.app");
 
   const callbackUrl = next
     ? `${baseUrl}/auth/callback?next=${encodeURIComponent(next)}`
