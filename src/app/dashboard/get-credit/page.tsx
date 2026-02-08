@@ -169,7 +169,7 @@ export default function GetCreditPage() {
     ? { ...reclaimCreditData, currency: NATIVE_XLM_SAC }
     : null;
 
-  console.log(creditData);
+  console.log(creditData, 	reclaimCreditData, "credit data");
 
   // Fetch XLM balance from Horizon
   const fetchBalance = useCallback(async (pubKey: string) => {

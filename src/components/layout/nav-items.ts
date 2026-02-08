@@ -33,6 +33,8 @@ export const dapNavItems: NavItem[] = [
   { label: "Portfolio", href: "/dashboard/dap/portfolio", icon: PieChart },
   { label: "Rewards", href: "/dashboard/dap/rewards", icon: Gift },
   { label: "Data Room", href: "/dashboard/dap/data-room", icon: Database },
+
+  
 ];
 
 /** Bottom nav items for /dashboard (non-DAP) routes */
@@ -41,6 +43,7 @@ export const dashboardBottomNavItems: NavItem[] = [
   { label: "Credit", href: "/dashboard/get-credit", icon: CreditCard },
   { label: "Profile", href: "/dashboard/profile", icon: User },
   { label: "Wallet", href: "/dashboard/wallet", icon: Wallet },
+  {label: "Earn", href: "/dashboard/dap/portfolio", icon: CreditCard},
 ];
 
 /** Bottom nav items for /dashboard/dap/* routes */
