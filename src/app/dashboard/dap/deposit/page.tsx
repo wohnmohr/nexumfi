@@ -151,7 +151,7 @@ export default function DepositPage() {
               <DollarSign className="size-5 text-primary" />
             </div>
             <div>
-              <p className="text-[11px] text-muted-foreground uppercase tracking-wider font-medium">Total Deposited</p>
+              <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Total Deposited</p>
               <p className="text-lg font-bold tabular-nums">{formatUSD(USER_DEPOSITS.totalDeposited)}</p>
             </div>
           </CardContent>
@@ -162,7 +162,7 @@ export default function DepositPage() {
               <TrendingUp className="size-5 text-emerald-500" />
             </div>
             <div>
-              <p className="text-[11px] text-muted-foreground uppercase tracking-wider font-medium">Total Earned</p>
+              <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Total Earned</p>
               <p className="text-lg font-bold tabular-nums text-emerald-500">{formatUSD(USER_DEPOSITS.totalEarned)}</p>
             </div>
           </CardContent>
@@ -173,7 +173,7 @@ export default function DepositPage() {
               <BarChart3 className="size-5 text-chart-4" />
             </div>
             <div>
-              <p className="text-[11px] text-muted-foreground uppercase tracking-wider font-medium">Active Positions</p>
+              <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Active Positions</p>
               <p className="text-lg font-bold tabular-nums">{USER_DEPOSITS.activePositions}</p>
             </div>
           </CardContent>
@@ -284,19 +284,19 @@ export default function DepositPage() {
                 {/* Metrics */}
                 <div className="grid grid-cols-4 gap-4 text-center shrink-0">
                   <div>
-                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider">APY</p>
+                    <p className="text-xs text-muted-foreground uppercase tracking-wider">APY</p>
                     <p className="text-sm font-bold text-emerald-500">{pool.apy}%</p>
                   </div>
                   <div>
-                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider">TVL</p>
+                    <p className="text-xs text-muted-foreground uppercase tracking-wider">TVL</p>
                     <p className="text-sm font-bold">${(pool.tvl / 1_000_000).toFixed(1)}M</p>
                   </div>
                   <div>
-                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Util.</p>
+                    <p className="text-xs text-muted-foreground uppercase tracking-wider">Util.</p>
                     <p className="text-sm font-bold">{pool.utilization}%</p>
                   </div>
                   <div>
-                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Lock</p>
+                    <p className="text-xs text-muted-foreground uppercase tracking-wider">Lock</p>
                     <p className="text-sm font-bold">{pool.lockup}</p>
                   </div>
                 </div>

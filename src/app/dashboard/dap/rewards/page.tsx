@@ -256,12 +256,12 @@ function StatCard({
             <Icon className={`size-5 ${accent}`} />
           </div>
           <div>
-            <p className="text-[11px] text-muted-foreground uppercase tracking-wider font-medium">
+            <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">
               {label}
             </p>
             <div className="flex items-baseline gap-1">
               <p className="text-lg font-bold tabular-nums">{value}</p>
-              {sub && <span className="text-[11px] text-muted-foreground">{sub}</span>}
+              {sub && <span className="text-xs text-muted-foreground">{sub}</span>}
             </div>
           </div>
         </div>

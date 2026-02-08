@@ -293,7 +293,7 @@ function StatCard({
             <Icon className={`size-5 ${accent}`} />
           </div>
           <div>
-            <p className="text-[11px] text-muted-foreground uppercase tracking-wider font-medium">{label}</p>
+            <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">{label}</p>
             <p className="text-lg font-bold tabular-nums">{value}</p>
           </div>
         </div>

@@ -600,7 +600,7 @@ export default function WalletPage() {
                           {info.label}
                         </Badge>
                       )}
-                      <p className="text-[11px] text-muted-foreground mt-0.5">
+                      <p className="text-xs text-muted-foreground mt-0.5">
                         {timeAgo(op.created_at)}
                       </p>
                     </div>

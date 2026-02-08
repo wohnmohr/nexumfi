@@ -138,19 +138,19 @@ export default function PortfolioPage() {
 
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 <div>
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Deposited</p>
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider">Deposited</p>
                   <p className="text-sm font-bold tabular-nums">{formatUSD(pos.deposited)}</p>
                 </div>
                 <div>
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Current Value</p>
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider">Current Value</p>
                   <p className="text-sm font-bold tabular-nums">{formatUSD(pos.currentValue)}</p>
                 </div>
                 <div>
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Earned</p>
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider">Earned</p>
                   <p className="text-sm font-bold tabular-nums text-emerald-500">+{formatUSD(pos.earned)}</p>
                 </div>
                 <div>
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider">APY</p>
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider">APY</p>
                   <p className="text-sm font-bold tabular-nums text-emerald-500">{pos.apy}%</p>
                 </div>
               </div>
@@ -212,7 +212,7 @@ export default function PortfolioPage() {
                     {tx.type === "withdraw" ? "-" : tx.type === "yield" ? "+" : ""}
                     {formatUSD(tx.amount)}
                   </p>
-                  <p className="text-[11px] text-muted-foreground">{tx.date}</p>
+                  <p className="text-xs text-muted-foreground">{tx.date}</p>
                 </div>
               </div>
             ))}
@@ -246,7 +246,7 @@ function StatCard({
             <Icon className={`size-5 ${accent}`} />
           </div>
           <div>
-            <p className="text-[11px] text-muted-foreground uppercase tracking-wider font-medium">{label}</p>
+            <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">{label}</p>
             <p className="text-lg font-bold tabular-nums">{value}</p>
           </div>
         </div>

@@ -648,7 +648,7 @@ function VendorCard({ vendor }: { vendor: VendorApi }) {
               )}
               {kycIndia.registered_address && (
                 <div className="pt-2 border-t border-border">
-                  <p className="text-[11px] text-muted-foreground uppercase tracking-wider font-medium mb-1">
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium mb-1">
                     Registered Address
                   </p>
                   <p className="text-sm">
@@ -837,7 +837,7 @@ function InfoItem({
         <Icon className="size-4 text-muted-foreground" />
       </div>
       <div className="min-w-0">
-        <p className="text-[11px] text-muted-foreground uppercase tracking-wider font-medium">
+        <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">
           {label}
         </p>
         <p className="text-sm font-medium truncate mt-0.5">{value}</p>

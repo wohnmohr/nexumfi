@@ -561,7 +561,7 @@ export default function InsurerOnboardingPage() {
                     aria-invalid={!!getFieldError("identity_value")}
                     className={form.country === "IN" ? "uppercase" : ""}
                   />
-                  <p className="text-[11px] text-muted-foreground">
+                  <p className="text-xs text-muted-foreground">
                     {form.country === "IN"
                       ? "10-character Permanent Account Number"
                       : "9-digit Social Security Number"}

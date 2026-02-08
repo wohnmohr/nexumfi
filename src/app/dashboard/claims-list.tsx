@@ -329,7 +329,7 @@ function Detail({
     <div className="flex items-start gap-2">
       <Icon className="size-3.5 text-muted-foreground mt-0.5 shrink-0" />
       <div className="min-w-0">
-        <p className="text-[11px] text-muted-foreground">{label}</p>
+        <p className="text-xs text-muted-foreground">{label}</p>
         <p
           className={`text-sm truncate ${mono ? "font-mono" : ""} ${highlight ? "text-emerald-500 font-medium" : ""}`}
         >

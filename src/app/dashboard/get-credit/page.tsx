@@ -591,7 +591,7 @@ export default function GetCreditPage() {
               )}
             </div>
             {borrowConfig && (
-              <div className="mt-3 pt-3 border-t border-border flex flex-wrap gap-x-6 gap-y-1 text-xs text-muted-foreground">
+              <div className="mt-3 pt-3 border-t border-border flex flex-wrap gap-x-6 gap-y-1 text-xs text-foreground/60">
                 <span>
                   Interest Rate: <span className="font-medium text-foreground">{bpsToPercent(borrowConfig.base_interest_rate)}%</span>
                 </span>
