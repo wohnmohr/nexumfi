@@ -1,5 +1,7 @@
 "use client";
 
+import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import {
   Card,
   CardContent,
@@ -7,72 +9,49 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import {
-  PieChart,
+  Wallet,
   TrendingUp,
-  TrendingDown,
-  DollarSign,
   Clock,
   ArrowUpRight,
-  ArrowDownRight,
-  Wallet,
-  BarChart3,
-  Activity,
+  Loader2,
+  AlertTriangle,
+  RefreshCw,
+  CheckCircle2,
+  ArrowDownToLine,
+  Info,
+  Landmark,
 } from "lucide-react";
+import { getStellarWallet } from "@/lib/stellar-wallet";
+import {
+  createBorrowClient,
+  createVaultClient,
+} from "@/lib/stellar-contracts";
+import { WalletPinDialog } from "@/components/wallet-pin-dialog";
+import type { BorrowConfig } from "@/app/contracts/borrow_contract/src";
+import type { VaultState, LPPosition } from "@/app/contracts/lending_vault/src";
 
 /* ------------------------------------------------------------------ */
-/*  Mock data                                                          */
+/*  Helpers                                                            */
 /* ------------------------------------------------------------------ */
 
-const PORTFOLIO = {
-  totalValue: 16_248.5,
-  totalDeposited: 15_000,
-  totalEarned: 1_248.5,
-  pnlPercent: 8.32,
-  activePositions: 2,
-  pendingRewards: 385,
-};
+function stroopsToXlm(stroops: bigint): number {
+  return Number(stroops) / 10_000_000;
+}
 
-const POSITIONS = [
-  {
-    id: "pos-1",
-    pool: "Receivables — Senior",
-    deposited: 10_000,
-    currentValue: 10_625,
-    earned: 625,
-    apy: 12.5,
-    status: "active" as const,
-    depositDate: "Dec 15, 2025",
-    maturity: "Jan 14, 2026",
-    lockup: "30 days",
-    asset: "USDC",
-  },
-  {
-    id: "pos-2",
-    pool: "Insurance Claims Pool",
-    deposited: 5_000,
-    currentValue: 5_623.5,
-    earned: 623.5,
-    apy: 9.2,
-    status: "active" as const,
-    depositDate: "Nov 28, 2025",
-    maturity: "Dec 5, 2025",
-    lockup: "7 days",
-    asset: "USDC",
-  },
-];
+function fmtXlm(xlm: number): string {
+  return xlm.toLocaleString("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+}
 
-const TRANSACTIONS = [
-  { id: "tx-1", type: "deposit" as const, pool: "Receivables — Senior", amount: 10_000, date: "Dec 15, 2025" },
-  { id: "tx-2", type: "deposit" as const, pool: "Insurance Claims Pool", amount: 5_000, date: "Nov 28, 2025" },
-  { id: "tx-3", type: "yield" as const, pool: "Insurance Claims Pool", amount: 38.2, date: "Dec 5, 2025" },
-  { id: "tx-4", type: "yield" as const, pool: "Receivables — Senior", amount: 51.6, date: "Jan 1, 2026" },
-  { id: "tx-5", type: "withdraw" as const, pool: "Credit Line Pool", amount: 2_500, date: "Nov 20, 2025" },
-];
-
-function formatUSD(n: number) {
-  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 2 }).format(n);
+function bpsToPercent(bps: bigint): number {
+  return Number(bps) / 100;
 }
 
 /* ------------------------------------------------------------------ */
@@ -80,143 +59,454 @@ function formatUSD(n: number) {
 /* ------------------------------------------------------------------ */
 
 export default function PortfolioPage() {
+  const router = useRouter();
+
+  // Wallet state
+  const [publicKey, setPublicKey] = useState<string | null>(null);
+  const [walletKeys, setWalletKeys] = useState<{ publicKey: string; privateKey: string } | null>(null);
+  const [walletMode, setWalletMode] = useState<"create" | "unlock">("create");
+  const [showPinDialog, setShowPinDialog] = useState(false);
+
+  // Pool state
+  const [vaultState, setVaultState] = useState<VaultState | null>(null);
+  const [borrowConfig, setBorrowConfig] = useState<BorrowConfig | null>(null);
+  const [lpPosition, setLpPosition] = useState<LPPosition | null>(null);
+  const [lpValue, setLpValue] = useState<bigint | null>(null);
+
+  // UI state
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Withdraw state
+  const [showWithdraw, setShowWithdraw] = useState(false);
+  const [withdrawShares, setWithdrawShares] = useState("");
+  const [isWithdrawing, setIsWithdrawing] = useState(false);
+  const [withdrawSuccess, setWithdrawSuccess] = useState(false);
+  const [withdrawError, setWithdrawError] = useState<string | null>(null);
+
+  // Fetch portfolio data
+  const fetchData = useCallback(async (userPk: string) => {
+    const verifierSecret = process.env.NEXT_PUBLIC_STELLAR_VERIFIER_SECRET;
+    if (!verifierSecret) {
+      setError("Verifier secret not configured");
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const vaultClient = createVaultClient(verifierSecret);
+      const borrowClient = createBorrowClient(verifierSecret);
+
+      const [stateRes, configRes, lpRes] = await Promise.all([
+        vaultClient.get_state(),
+        borrowClient.get_config(),
+        vaultClient.get_lp({ depositor: userPk }),
+      ]);
+
+      setVaultState(stateRes.result);
+      setBorrowConfig(configRes.result);
+
+      const lp = lpRes.result;
+      if (lp) {
+        setLpPosition(lp);
+        try {
+          const valueRes = await vaultClient.shares_value({ shares: lp.shares });
+          setLpValue(valueRes.result);
+        } catch {
+          // non-critical
+        }
+      } else {
+        setLpPosition(null);
+        setLpValue(null);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to fetch portfolio data");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Check wallet on mount
+  useEffect(() => {
+    const wallet = getStellarWallet();
+    if (wallet) {
+      setPublicKey(wallet.publicKey);
+      setWalletMode("unlock");
+      fetchData(wallet.publicKey);
+    } else {
+      setLoading(false);
+    }
+  }, [fetchData]);
+
+  // Handle wallet unlock
+  const handleWalletUnlock = (keys: { publicKey: string; privateKey: string }) => {
+    setWalletKeys(keys);
+    setShowPinDialog(false);
+    setPublicKey(keys.publicKey);
+    fetchData(keys.publicKey);
+  };
+
+  // Handle withdraw
+  async function handleWithdraw() {
+    if (!lpPosition || !withdrawShares || Number(withdrawShares) <= 0) return;
+
+    if (!walletKeys) {
+      setShowPinDialog(true);
+      return;
+    }
+
+    setIsWithdrawing(true);
+    setWithdrawError(null);
+
+    try {
+      const vaultClient = createVaultClient(walletKeys.privateKey);
+      const sharesToBurn = BigInt(Math.round(Number(withdrawShares) * 10_000_000));
+
+      // Step 1: Simulate the withdraw transaction
+      const tx = await vaultClient.withdraw({
+        depositor: walletKeys.publicKey,
+        shares_to_burn: sharesToBurn,
+      });
+
+      // Step 2: Sign and submit to network
+      const result = await tx.signAndSend();
+
+      const resultVal = result.result;
+      if (resultVal.isOk()) {
+        setWithdrawSuccess(true);
+        setWithdrawShares("");
+        setShowWithdraw(false);
+
+        // Refresh data
+        setTimeout(() => {
+          setWithdrawSuccess(false);
+          fetchData(walletKeys.publicKey);
+        }, 3000);
+      } else {
+        setWithdrawError("Withdrawal transaction failed on-chain");
+      }
+    } catch (err) {
+      setWithdrawError(err instanceof Error ? err.message : "Withdrawal failed");
+    } finally {
+      setIsWithdrawing(false);
+    }
+  }
+
+  const apr = borrowConfig ? bpsToPercent(borrowConfig.base_interest_rate) : 0;
+
+  /* ---- Wallet PIN dialog ---- */
+  if (showPinDialog && !walletKeys) {
+    return (
+      <div className="p-4 md:p-6 space-y-6 max-w-5xl">
+        <div>
+          <h1 className="text-xl md:text-2xl font-semibold">Portfolio</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Unlock your wallet to manage your position.
+          </p>
+        </div>
+        <WalletPinDialog mode={walletMode} onSuccess={handleWalletUnlock} />
+      </div>
+    );
+  }
+
+  /* ---- Loading ---- */
+  if (loading) {
+    return (
+      <div className="p-4 md:p-6 space-y-6 max-w-5xl">
+        <div>
+          <h1 className="text-xl md:text-2xl font-semibold">Portfolio</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Track your positions and earnings.
+          </p>
+        </div>
+        <Card>
+          <CardContent className="flex items-center justify-center py-16">
+            <Loader2 className="size-5 animate-spin text-muted-foreground" />
+            <span className="ml-2 text-sm text-muted-foreground">Loading portfolio...</span>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  /* ---- Error ---- */
+  if (error) {
+    return (
+      <div className="p-4 md:p-6 space-y-6 max-w-5xl">
+        <div>
+          <h1 className="text-xl md:text-2xl font-semibold">Portfolio</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Track your positions and earnings.
+          </p>
+        </div>
+        <Card className="border-destructive/20">
+          <CardContent className="flex items-center gap-3 py-6">
+            <AlertTriangle className="size-5 text-destructive shrink-0" />
+            <div>
+              <p className="text-sm font-medium">Failed to load portfolio</p>
+              <p className="text-xs text-muted-foreground mt-0.5">{error}</p>
+            </div>
+            <Button
+              size="sm"
+              variant="outline"
+              className="ml-auto shrink-0"
+              onClick={() => publicKey && fetchData(publicKey)}
+            >
+              <RefreshCw className="size-3.5" />
+              Retry
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  /* ---- No wallet ---- */
+  if (!publicKey) {
+    return (
+      <div className="p-4 md:p-6 space-y-6 max-w-5xl">
+        <div>
+          <h1 className="text-xl md:text-2xl font-semibold">Portfolio</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Track your positions and earnings.
+          </p>
+        </div>
+        <Card className="border-dashed">
+          <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+            <div className="size-14 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
+              <Wallet className="size-7 text-primary" />
+            </div>
+            <h3 className="text-base font-semibold">No Wallet Connected</h3>
+            <p className="text-sm text-muted-foreground mt-1 max-w-xs">
+              Create or connect a Stellar wallet to view your portfolio.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  /* ---- No position ---- */
+  if (!lpPosition) {
+    return (
+      <div className="p-4 md:p-6 space-y-6 max-w-5xl">
+        <div>
+          <h1 className="text-xl md:text-2xl font-semibold">Portfolio</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Track your positions and earnings.
+          </p>
+        </div>
+        <Card className="border-dashed">
+          <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+            <div className="size-14 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
+              <ArrowDownToLine className="size-7 text-primary" />
+            </div>
+            <h3 className="text-base font-semibold">No Active Position</h3>
+            <p className="text-sm text-muted-foreground mt-1 max-w-xs">
+              Deposit XLM into the lending vault to start earning yield.
+            </p>
+            <Button className="mt-5" onClick={() => router.push("/dashboard/dap/deposit")}>
+              <ArrowDownToLine className="size-4" />
+              Go to Deposit
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  /* ---- Has position ---- */
+  const shares = stroopsToXlm(lpPosition.shares);
+  const currentValue = lpValue !== null ? stroopsToXlm(lpValue) : null;
+  const depositDate = new Date(Number(lpPosition.deposit_timestamp) * 1000);
+
   return (
     <div className="p-4 md:p-6 space-y-6 max-w-5xl mx-auto">
       {/* Page header */}
-      <div>
-        <h1 className="text-xl md:text-2xl font-semibold">Portfolio</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Track your positions, earnings, and transaction history.
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-xl md:text-2xl font-semibold">Portfolio</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Track your positions and earnings.
+          </p>
+        </div>
+        <Button size="sm" variant="outline" onClick={() => fetchData(publicKey)}>
+          <RefreshCw className="size-3.5" />
+          Refresh
+        </Button>
       </div>
+
+      {/* ---- Withdraw success toast ---- */}
+      {withdrawSuccess && (
+        <Card className="border-emerald-500/30 bg-emerald-500/5">
+          <CardContent className="py-4 flex items-center gap-3">
+            <CheckCircle2 className="size-5 text-emerald-500 shrink-0" />
+            <p className="text-sm font-medium">Withdrawal successful! Your XLM has been returned.</p>
+          </CardContent>
+        </Card>
+      )}
 
       {/* ---- Overview stats ---- */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <StatCard
-          label="Portfolio Value"
-          value={formatUSD(PORTFOLIO.totalValue)}
+          label="Position Value"
+          value={currentValue !== null ? `${fmtXlm(currentValue)} XLM` : "—"}
           icon={Wallet}
           accent="text-primary"
         />
         <StatCard
-          label="Total Earned"
-          value={formatUSD(PORTFOLIO.totalEarned)}
+          label="LP Shares"
+          value={fmtXlm(shares)}
+          icon={Landmark}
+          accent="text-chart-2"
+        />
+        <StatCard
+          label="Current APR"
+          value={`${apr.toFixed(1)}%`}
           icon={TrendingUp}
           accent="text-emerald-500"
         />
         <StatCard
-          label="P&L"
-          value={`+${PORTFOLIO.pnlPercent}%`}
-          icon={BarChart3}
-          accent="text-emerald-500"
-        />
-        <StatCard
-          label="Pending Rewards"
-          value={`${PORTFOLIO.pendingRewards} pts`}
-          icon={Activity}
+          label="Deposit Date"
+          value={depositDate.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+          icon={Clock}
           accent="text-chart-4"
         />
       </div>
 
-      {/* ---- Active positions ---- */}
-      <div className="space-y-4">
-        <h2 className="text-lg font-semibold">Active Positions</h2>
-        {POSITIONS.map((pos) => (
-          <Card key={pos.id}>
-            <CardContent className="py-5 space-y-4">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <h3 className="text-sm font-semibold">{pos.pool}</h3>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    Deposited {pos.depositDate} &middot; {pos.lockup} lock
-                  </p>
-                </div>
-                <Badge variant="secondary" className="text-emerald-500 shrink-0">
-                  Active
-                </Badge>
-              </div>
-
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                <div>
-                  <p className="text-xs text-muted-foreground uppercase tracking-wider">Deposited</p>
-                  <p className="text-sm font-bold tabular-nums">{formatUSD(pos.deposited)}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground uppercase tracking-wider">Current Value</p>
-                  <p className="text-sm font-bold tabular-nums">{formatUSD(pos.currentValue)}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground uppercase tracking-wider">Earned</p>
-                  <p className="text-sm font-bold tabular-nums text-emerald-500">+{formatUSD(pos.earned)}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground uppercase tracking-wider">APY</p>
-                  <p className="text-sm font-bold tabular-nums text-emerald-500">{pos.apy}%</p>
-                </div>
-              </div>
-
-              {/* Progress bar for lockup */}
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-muted-foreground flex items-center gap-1">
-                    <Clock className="size-3" /> Maturity
-                  </span>
-                  <span className="font-medium">{pos.maturity}</span>
-                </div>
-                <div className="h-1.5 rounded-full bg-muted overflow-hidden">
-                  <div className="h-full bg-emerald-500/60 rounded-full" style={{ width: "70%" }} />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {/* ---- Transaction history ---- */}
+      {/* ---- Position card ---- */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Transaction History</CardTitle>
-          <CardDescription>Recent deposits, withdrawals, and yield payouts.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-1">
-            {TRANSACTIONS.map((tx) => (
-              <div key={tx.id} className="flex items-center gap-3 py-3 border-b border-border last:border-0">
-                <div
-                  className={`size-9 rounded-lg flex items-center justify-center shrink-0 ${
-                    tx.type === "deposit"
-                      ? "bg-primary/10 text-primary"
-                      : tx.type === "yield"
-                        ? "bg-emerald-500/10 text-emerald-500"
-                        : "bg-muted text-muted-foreground"
-                  }`}
-                >
-                  {tx.type === "deposit" ? (
-                    <ArrowDownRight className="size-4" />
-                  ) : tx.type === "yield" ? (
-                    <TrendingUp className="size-4" />
-                  ) : (
-                    <ArrowUpRight className="size-4" />
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium capitalize">{tx.type}</p>
-                  <p className="text-xs text-muted-foreground truncate">{tx.pool}</p>
-                </div>
-                <div className="text-right">
-                  <p
-                    className={`text-sm font-semibold tabular-nums ${
-                      tx.type === "withdraw" ? "text-foreground" : tx.type === "yield" ? "text-emerald-500" : "text-foreground"
-                    }`}
-                  >
-                    {tx.type === "withdraw" ? "-" : tx.type === "yield" ? "+" : ""}
-                    {formatUSD(tx.amount)}
-                  </p>
-                  <p className="text-xs text-muted-foreground">{tx.date}</p>
-                </div>
-              </div>
-            ))}
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-lg">XLM Lending Vault</CardTitle>
+              <CardDescription>Your active liquidity position.</CardDescription>
+            </div>
+            <Badge variant="secondary" className="text-emerald-500">Active</Badge>
           </div>
+        </CardHeader>
+        <CardContent className="space-y-5">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wider">LP Shares</p>
+              <p className="text-sm font-bold tabular-nums">{fmtXlm(shares)}</p>
+            </div>
+            <div>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Current Value</p>
+              <p className="text-sm font-bold tabular-nums text-emerald-500">
+                {currentValue !== null ? `${fmtXlm(currentValue)} XLM` : "—"}
+              </p>
+            </div>
+            <div>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wider">APR</p>
+              <p className="text-sm font-bold tabular-nums text-emerald-500">{apr.toFixed(1)}%</p>
+            </div>
+            <div>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Deposited</p>
+              <p className="text-sm font-bold tabular-nums">
+                {depositDate.toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+              </p>
+            </div>
+          </div>
+
+          {/* Pool utilization bar */}
+          {vaultState && (
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-muted-foreground">Pool Utilization</span>
+                <span className="font-medium">
+                  {vaultState.total_deposits > BigInt(0)
+                    ? (Number((vaultState.total_borrowed * BigInt(10000)) / vaultState.total_deposits) / 100).toFixed(1)
+                    : "0.0"}%
+                </span>
+              </div>
+              <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                <div
+                  className="h-full bg-emerald-500/60 rounded-full"
+                  style={{
+                    width: `${vaultState.total_deposits > BigInt(0)
+                      ? Math.min(100, Number((vaultState.total_borrowed * BigInt(100)) / vaultState.total_deposits))
+                      : 0}%`,
+                  }}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Withdraw section */}
+          {!showWithdraw ? (
+            <Button variant="outline" className="w-full" onClick={() => setShowWithdraw(true)}>
+              <ArrowUpRight className="size-4" />
+              Withdraw
+            </Button>
+          ) : (
+            <div className="space-y-4 rounded-xl border border-border p-4">
+              <div className="flex items-center justify-between">
+                <h4 className="text-sm font-semibold">Withdraw LP Shares</h4>
+                <button
+                  className="text-xs text-muted-foreground hover:text-foreground"
+                  onClick={() => {
+                    setShowWithdraw(false);
+                    setWithdrawShares("");
+                    setWithdrawError(null);
+                  }}
+                >
+                  Cancel
+                </button>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label>Shares to Withdraw</Label>
+                  <button
+                    className="text-xs text-muted-foreground hover:text-foreground"
+                    onClick={() => setWithdrawShares(shares.toFixed(7))}
+                  >
+                    Max: {fmtXlm(shares)}
+                  </button>
+                </div>
+                <Input
+                  type="number"
+                  min="0"
+                  max={shares}
+                  step="0.0000001"
+                  placeholder="0.00"
+                  value={withdrawShares}
+                  onChange={(e) => setWithdrawShares(e.target.value)}
+                />
+              </div>
+
+              <div className="rounded-xl bg-muted/30 p-3 flex items-start gap-2">
+                <Info className="size-4 text-muted-foreground mt-0.5 shrink-0" />
+                <p className="text-xs text-muted-foreground">
+                  Withdrawing burns your LP shares and returns the equivalent XLM plus any accrued yield.
+                </p>
+              </div>
+
+              {withdrawError && (
+                <div className="rounded-xl bg-destructive/10 border border-destructive/20 p-3 flex items-start gap-2">
+                  <AlertTriangle className="size-4 text-destructive mt-0.5 shrink-0" />
+                  <p className="text-xs text-destructive">{withdrawError}</p>
+                </div>
+              )}
+
+              <Button
+                className="w-full"
+                onClick={handleWithdraw}
+                disabled={isWithdrawing || !withdrawShares || Number(withdrawShares) <= 0 || Number(withdrawShares) > shares}
+              >
+                {isWithdrawing ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  <ArrowUpRight className="size-4" />
+                )}
+                {isWithdrawing ? "Withdrawing..." : "Confirm Withdraw"}
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
