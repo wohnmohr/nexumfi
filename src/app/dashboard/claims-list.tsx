@@ -23,7 +23,6 @@ import {
   FileText,
   Wallet,
   CreditCard,
-  Plus,
   Clock,
   ArrowRight,
   TrendingUp,
@@ -78,13 +77,6 @@ export function ClaimsList() {
             Submit your first insurance claim to receive a tokenized credit
             line.
           </p>
-          <Button
-            className="mt-5"
-            onClick={() => router.push("/dashboard/get-credit")}
-          >
-            <Plus className="size-4" />
-            Submit a Claim
-          </Button>
         </CardContent>
       </Card>
     );
@@ -152,20 +144,11 @@ export function ClaimsList() {
 
       {/* ---- Claims list ---- */}
       <Card>
-        <CardHeader className="flex-row items-center justify-between space-y-0">
-          <div>
-            <CardTitle className="text-lg">Insurance Claims</CardTitle>
-            <CardDescription>
-              All your submitted claims and their current status
-            </CardDescription>
-          </div>
-          <Button
-            size="sm"
-            onClick={() => router.push("/dashboard/get-credit")}
-          >
-            <Plus className="size-4" />
-            New Claim
-          </Button>
+        <CardHeader>
+          <CardTitle className="text-lg">Insurance Claims</CardTitle>
+          <CardDescription>
+            All your submitted claims and their current status
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           {claims.map((claim) => {

@@ -28,6 +28,7 @@ export const dashboardNavItems: NavItem[] = [
 
 /** Nav items shown on /dashboard/dap/* routes */
 export const dapNavItems: NavItem[] = [
+  { label: "Home", href: "/dashboard", icon: LayoutDashboard },
   { label: "Deposit", href: "/dashboard/dap/deposit", icon: ArrowDownToLine },
   { label: "Portfolio", href: "/dashboard/dap/portfolio", icon: PieChart },
   { label: "Rewards", href: "/dashboard/dap/rewards", icon: Gift },
@@ -44,6 +45,7 @@ export const dashboardBottomNavItems: NavItem[] = [
 
 /** Bottom nav items for /dashboard/dap/* routes */
 export const dapBottomNavItems: NavItem[] = [
+  { label: "Home", href: "/dashboard", icon: LayoutDashboard },
   { label: "Deposit", href: "/dashboard/dap/deposit", icon: ArrowDownToLine },
   { label: "Portfolio", href: "/dashboard/dap/portfolio", icon: PieChart },
   { label: "Rewards", href: "/dashboard/dap/rewards", icon: Gift },

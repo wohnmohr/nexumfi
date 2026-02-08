@@ -1,8 +1,8 @@
 "use client";
 
-import { useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
-import { Bell, Loader2, LogOut, Menu, Search, Settings, User } from "lucide-react";
+import { Bell, Layers, Loader2, LogOut, Menu, Settings, User } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,13 +16,50 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { signOut } from "@/app/login/actions";
 import { AppLogo } from "./app-logo";
+import { createClient } from "@/lib/supabase/client";
+import type { User as SupabaseUser } from "@supabase/supabase-js";
 
 interface AppHeaderProps {
   onMenuToggle?: () => void;
 }
 
+function getDisplayName(user: SupabaseUser | null): string {
+  if (!user) return "User";
+  const meta = user.user_metadata;
+  const name = meta?.full_name ?? meta?.name ?? "";
+  return name.trim() || "User";
+}
+
+function getInitials(user: SupabaseUser | null): string {
+  const name = getDisplayName(user);
+  if (name === "User") return "U";
+  const parts = name.split(/\s+/).filter(Boolean);
+  if (parts.length >= 2) {
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  }
+  return name.slice(0, 2).toUpperCase();
+}
+
 export function AppHeader({ onMenuToggle }: AppHeaderProps) {
   const [isSigningOut, startTransition] = useTransition();
+  const [user, setUser] = useState<SupabaseUser | null>(null);
+
+  useEffect(() => {
+    const supabase = createClient();
+
+    const loadUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      setUser(session?.user ?? null);
+    };
+
+    loadUser();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => {
+      loadUser();
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   const handleSignOut = () => {
     startTransition(async () => {
@@ -51,25 +88,7 @@ export function AppHeader({ onMenuToggle }: AppHeaderProps) {
 
         {/* Main header content */}
         <div className="flex flex-1 items-center gap-4 px-4">
-          {/* Search bar (desktop only) */}
-          <button className="hidden md:flex items-center gap-2 rounded-lg border border-sidebar-border bg-background/50 px-3 py-1.5 text-sm text-muted-foreground w-72 hover:bg-background/80 transition-colors">
-            <Search className="size-4 shrink-0" />
-            <span>Search...</span>
-            <kbd className="ml-auto pointer-events-none hidden h-5 select-none items-center gap-1 rounded border border-sidebar-border bg-sidebar px-1.5 font-mono text-[10px] font-medium text-muted-foreground sm:flex">
-              <span className="text-xs">⌘</span>K
-            </kbd>
-          </button>
-
           <div className="flex-1" />
-
-          {/* Mobile search */}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="md:hidden text-sidebar-foreground"
-          >
-            <Search className="size-5" />
-          </Button>
 
           {/* Notifications */}
           <Button
@@ -86,7 +105,7 @@ export function AppHeader({ onMenuToggle }: AppHeaderProps) {
             <DropdownMenuTrigger asChild>
               <button className="rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring">
                 <Avatar size="sm">
-                  <AvatarFallback>U</AvatarFallback>
+                  <AvatarFallback>{getInitials(user)}</AvatarFallback>
                 </Avatar>
               </button>
             </DropdownMenuTrigger>
@@ -97,15 +116,24 @@ export function AppHeader({ onMenuToggle }: AppHeaderProps) {
               <DropdownMenuLabel>
                 <div className="flex flex-col gap-0.5">
                   <span className="text-sm font-medium text-sidebar-foreground">
-                    User
+                    {getDisplayName(user)}
                   </span>
-                  <span className="text-xs text-sidebar-foreground/50">
-                    user@example.com
+                  <span className="text-xs text-sidebar-foreground/50 truncate">
+                    {user?.email ?? "—"}
                   </span>
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator className="bg-sidebar-border" />
               <DropdownMenuGroup>
+                <DropdownMenuItem
+                  asChild
+                  className="text-sidebar-foreground/70 focus:bg-primary/15 focus:text-sidebar-foreground"
+                >
+                  <Link href="/dashboard/dap/portfolio">
+                    <Layers className="size-4" />
+                    DAP
+                  </Link>
+                </DropdownMenuItem>
                 <DropdownMenuItem
                   asChild
                   className="text-sidebar-foreground/70 focus:bg-primary/15 focus:text-sidebar-foreground"
@@ -119,7 +147,7 @@ export function AppHeader({ onMenuToggle }: AppHeaderProps) {
                   asChild
                   className="text-sidebar-foreground/70 focus:bg-primary/15 focus:text-sidebar-foreground"
                 >
-                  <Link href="/settings">
+                  <Link href="/dashboard/settings">
                     <Settings className="size-4" />
                     Settings
                   </Link>
