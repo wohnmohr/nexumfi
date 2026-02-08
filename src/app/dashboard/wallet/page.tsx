@@ -130,8 +130,13 @@ export default function WalletPage() {
   const [sendError, setSendError] = useState<string | null>(null);
   const [sendSuccess, setSendSuccess] = useState<string | null>(null);
 
-  // Withdraw dialog state
+  // Withdraw (mock anchor off-ramp) state
   const [withdrawOpen, setWithdrawOpen] = useState(false);
+  const [withdrawAmount, setWithdrawAmount] = useState("");
+  const [withdrawCurrency, setWithdrawCurrency] = useState("USD");
+  const [withdrawBank, setWithdrawBank] = useState("");
+  const [withdrawStep, setWithdrawStep] = useState<"form" | "processing" | "success">("form");
+  const [withdrawProcessing, setWithdrawProcessing] = useState(false);
 
   // Copy state
   const [copied, setCopied] = useState(false);
@@ -726,34 +731,177 @@ export default function WalletPage() {
         </DialogContent>
       </Dialog>
 
-      {/* ---- Withdraw (Anchor off-ramp) Dialog ---- */}
-      <Dialog open={withdrawOpen} onOpenChange={setWithdrawOpen}>
+      {/* ---- Withdraw (Mock Anchor off-ramp) Dialog ---- */}
+      <Dialog
+        open={withdrawOpen}
+        onOpenChange={(open) => {
+          setWithdrawOpen(open);
+          if (!open) {
+            setWithdrawStep("form");
+            setWithdrawAmount("");
+            setWithdrawBank("");
+            setWithdrawProcessing(false);
+          }
+        }}
+      >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Withdraw to Fiat</DialogTitle>
             <DialogDescription>
-              Convert your XLM to fiat currency via Stellar Anchor.
+              Convert XLM to fiat via Stellar Anchor (demo).
             </DialogDescription>
           </DialogHeader>
-          <div className="py-4">
-            <div className="rounded-xl bg-amber-500/10 border border-amber-500/20 p-4 text-center space-y-2">
-              <AlertTriangle className="size-8 text-amber-500 mx-auto" />
-              <p className="text-sm font-medium">Coming Soon</p>
-              <p className="text-xs text-muted-foreground max-w-xs mx-auto">
-                Fiat off-ramp via Stellar Anchor will be available soon.
-                You&apos;ll be able to withdraw to your bank account directly.
+
+          {withdrawStep === "form" && (
+            <div className="space-y-4 py-2">
+              {/* Amount */}
+              <div className="space-y-2">
+                <Label>Amount (XLM)</Label>
+                <div className="flex gap-2">
+                  <Input
+                    type="number"
+                    min="1"
+                    step="0.01"
+                    placeholder="0.00"
+                    value={withdrawAmount}
+                    onChange={(e) => setWithdrawAmount(e.target.value)}
+                  />
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="shrink-0"
+                    onClick={() => setWithdrawAmount(Math.max(0, xlmAmount - 2).toFixed(2))}
+                  >
+                    Max
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Available: {fmtXlm(xlmAmount)} XLM
+                </p>
+              </div>
+
+              {/* Currency */}
+              <div className="space-y-2">
+                <Label>Receive Currency</Label>
+                <div className="flex gap-2">
+                  {["USD", "EUR", "GBP"].map((cur) => (
+                    <Button
+                      key={cur}
+                      size="sm"
+                      variant={withdrawCurrency === cur ? "default" : "outline"}
+                      className="flex-1"
+                      onClick={() => setWithdrawCurrency(cur)}
+                    >
+                      {cur}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Conversion preview */}
+              {withdrawAmount && Number(withdrawAmount) > 0 && (
+                <div className="rounded-xl bg-muted/50 p-3 space-y-1">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">You send</span>
+                    <span className="font-medium">{fmtXlm(Number(withdrawAmount))} XLM</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Exchange rate</span>
+                    <span className="font-medium">1 XLM = 0.39 {withdrawCurrency}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Fee</span>
+                    <span className="font-medium">0.5%</span>
+                  </div>
+                  <div className="border-t border-border pt-1 mt-1 flex justify-between text-sm">
+                    <span className="font-medium">You receive</span>
+                    <span className="font-semibold text-emerald-500">
+                      {(Number(withdrawAmount) * 0.39 * 0.995).toFixed(2)} {withdrawCurrency}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Bank account */}
+              <div className="space-y-2">
+                <Label>Bank Account (IBAN / Account Number)</Label>
+                <Input
+                  placeholder="e.g. DE89 3704 0044 0532 0130 00"
+                  value={withdrawBank}
+                  onChange={(e) => setWithdrawBank(e.target.value)}
+                />
+              </div>
+
+              <Button
+                className="w-full"
+                disabled={!withdrawAmount || Number(withdrawAmount) <= 0 || !withdrawBank}
+                onClick={async () => {
+                  setWithdrawStep("processing");
+                  setWithdrawProcessing(true);
+                  await new Promise((r) => setTimeout(r, 3000));
+                  setWithdrawProcessing(false);
+                  setWithdrawStep("success");
+                }}
+              >
+                <Landmark className="size-4" />
+                Withdraw {withdrawAmount ? `${fmtXlm(Number(withdrawAmount))} XLM` : ""}
+              </Button>
+            </div>
+          )}
+
+          {withdrawStep === "processing" && (
+            <div className="flex flex-col items-center gap-3 py-8">
+              <Loader2 className="size-8 animate-spin text-primary" />
+              <p className="text-sm font-medium">Processing withdrawal...</p>
+              <p className="text-xs text-muted-foreground text-center max-w-xs">
+                Submitting to Stellar Anchor for conversion. This may take a moment.
               </p>
             </div>
-          </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              className="w-full"
-              onClick={() => setWithdrawOpen(false)}
-            >
-              Close
-            </Button>
-          </DialogFooter>
+          )}
+
+          {withdrawStep === "success" && (
+            <div className="flex flex-col items-center gap-3 py-6">
+              <div className="size-14 rounded-2xl bg-emerald-500/15 flex items-center justify-center">
+                <Check className="size-7 text-emerald-500" />
+              </div>
+              <h3 className="text-lg font-semibold">Withdrawal Submitted</h3>
+              <div className="rounded-xl bg-muted/50 p-3 w-full space-y-1 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Amount</span>
+                  <span className="font-medium">{fmtXlm(Number(withdrawAmount))} XLM</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Receive</span>
+                  <span className="font-medium text-emerald-500">
+                    {(Number(withdrawAmount) * 0.39 * 0.995).toFixed(2)} {withdrawCurrency}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">To</span>
+                  <span className="font-medium font-mono text-xs">{shortenAddress(withdrawBank, 8)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">ETA</span>
+                  <span className="font-medium">1-2 business days</span>
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground text-center">
+                This is a demo. No actual funds were transferred.
+              </p>
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => {
+                  setWithdrawOpen(false);
+                  setWithdrawStep("form");
+                  setWithdrawAmount("");
+                  setWithdrawBank("");
+                }}
+              >
+                Done
+              </Button>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
 
