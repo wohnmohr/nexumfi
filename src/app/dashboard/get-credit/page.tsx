@@ -354,6 +354,8 @@ export default function GetCreditPage() {
               }
             ).sendTransactionResponse?.hash ?? "unknown",
         });
+        // Auto-advance to borrow step when mint completes
+        setStep("borrow");
       } else {
         throw new Error(
           `Mint failed: ${JSON.stringify(mintResultVal.unwrapErr())}`
