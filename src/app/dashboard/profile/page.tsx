@@ -9,6 +9,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { apiFetch } from "@/lib/api-fetch";
 import { cn } from "@/lib/utils";
 import {
   Building2,
@@ -180,7 +181,7 @@ export default function ProfilePage() {
       }
 
       const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
-      const res = await fetch(`${baseUrl}/api/me`, {
+      const res = await apiFetch(`${baseUrl}/api/me`, {
         headers: {
           Authorization: `Bearer ${session.access_token}`,
         },

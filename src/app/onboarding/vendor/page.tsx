@@ -21,6 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { apiFetch } from "@/lib/api-fetch";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 import { AppLogo } from "@/components/layout/app-logo";
@@ -244,7 +245,7 @@ export default function VendorOnboardingPage() {
       }
 
       const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
-      const res = await fetch(`${baseUrl}/api/vendors`, {
+      const res = await apiFetch(`${baseUrl}/api/vendors`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

@@ -3,6 +3,8 @@
  * that is not CLEAR. Used by login flow and middleware to block entire account access.
  */
 
+import { apiFetch } from "./api-fetch";
+
 export type AmlBlockedReason = "FLAGGED" | "ERROR";
 
 export interface AmlCheckResult {
@@ -17,7 +19,7 @@ export async function checkAmlStatus(
     const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
     if (!baseUrl) return { blocked: false };
 
-    const res = await fetch(`${baseUrl}/api/me`, {
+    const res = await apiFetch(`${baseUrl}/api/me`, {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
 

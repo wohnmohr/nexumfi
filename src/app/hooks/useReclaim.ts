@@ -1,6 +1,7 @@
 // hooks/useReclaim.js
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { Proof, ReclaimProofRequest } from '@reclaimprotocol/js-sdk';
+import { apiFetch } from '@/lib/api-fetch';
 import { createClient } from '@/lib/supabase/client';
 
 const STATUS_POLL_INTERVAL_MS = 3000;
@@ -78,7 +79,7 @@ export function useReclaim() {
       const statusUrl = reclaimProofRequest.getStatusUrl();
       statusPollRef.current = setInterval(async () => {
         try {
-          const res = await fetch(statusUrl, {
+          const res = await apiFetch(statusUrl, {
             method: 'GET',
             headers: { 'Content-Type': 'application/json' },
           });
@@ -94,7 +95,7 @@ export function useReclaim() {
             if (session?.access_token) {
               headers['Authorization'] = `Bearer ${session.access_token}`;
             }
-            const creditRes = await fetch(creditUrl, {
+            const creditRes = await apiFetch(creditUrl, {
               method: 'POST',
               headers,
               body: JSON.stringify(data),
