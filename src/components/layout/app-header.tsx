@@ -131,7 +131,7 @@ export function AppHeader({ onMenuToggle }: AppHeaderProps) {
                 >
                   <Link href="/dashboard/dap/portfolio">
                     <Layers className="size-4" />
-                    DAP
+                    Earn
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem
