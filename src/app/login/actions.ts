@@ -90,8 +90,7 @@ export async function signInWithGoogle(next?: string) {
   const baseUrl =
     process.env.NODE_ENV === "development"
       ? dynamicOrigin
-      : (process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") ??
-        "https://hypermonks-frontend.vercel.app");
+      : "https://jpaxekkutxkvnrsxvkry.supabase.co";
 
   const callbackUrl = next
     ? `${baseUrl}/auth/callback?next=${encodeURIComponent(next)}`
