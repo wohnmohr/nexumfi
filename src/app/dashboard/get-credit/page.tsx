@@ -42,6 +42,7 @@ import { networks as receivableNetworks } from "@/app/contracts/receivable_token
 import { Keypair } from "@stellar/stellar-sdk";
 import { basicNodeSigner } from "@stellar/stellar-sdk/contract";
 import { WalletPinDialog } from "@/components/wallet-pin-dialog";
+import { useReclaim } from "@/app/hooks/useReclaim";
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -157,8 +158,8 @@ export default function GetCreditPage() {
   const [loanDetails, setLoanDetails] = useState<Loan | null>(null);
   const [loanLtv, setLoanLtv] = useState<bigint | null>(null);
   // Reclaim verification (commented out as per original file structure but kept for context)
-  // const { proofs, isLoading: isVerifying, error: verifyError, startVerification, creditData: reclaimCreditData, setMockCreditData } = useReclaim();
-  // const isVerified = proofs !== null && proofs.length > 0;
+  const { proofs, isLoading: isVerifying, error: verifyError, startVerification, creditData: reclaimCreditData, setMockCreditData } = useReclaim();
+  const isVerified = proofs !== null && proofs.length > 0;
 
   // Existing active loan check
   const [hasActiveLoan, setHasActiveLoan] = useState(false);
@@ -176,18 +177,18 @@ export default function GetCreditPage() {
     session_id: "mock-session-001",
   });
 
-  const setMockCreditData = () => {
-    setCreditData({
-      user_id: "mock-user-001",
-      credit_line: 1000,
-      currency: NATIVE_XLM_SAC,
-      extracted_username: "testuser",
-      context_message: "Mock verification for testing",
-      session_id: "mock-session-001",
-    });
-  };
+  // const setMockCreditData = () => {
+  //   setCreditData({
+  //     user_id: "mock-user-001",
+  //     credit_line: 1000,
+  //     currency: NATIVE_XLM_SAC,
+  //     extracted_username: "testuser",
+  //     context_message: "Mock verification for testing",
+  //     session_id: "mock-session-001",
+  //   });
+  // };
 
-  const isVerifying = false;
+  // const isVerifying = false;
 
   // Fetch XLM balance from Horizon
   const fetchBalance = useCallback(async (pubKey: string) => {
