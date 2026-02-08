@@ -813,7 +813,7 @@ export default function GetCreditPage() {
       {step === "tokenize"  && (
         <>
           {/* Credit Approved — ready to tokenize */}
-          {!isProcessing && !mintResult && creditData && (
+          { creditData && (
             <Card className="border-emerald-500/20">
               <CardHeader>
                 <div className="flex items-center gap-3">
