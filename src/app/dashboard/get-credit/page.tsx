@@ -109,6 +109,64 @@ function bpsToPercent(bps: bigint): number {
   return Number(bps) / 100;
 }
 
+/** Map contract error codes to user-friendly messages */
+const CONTRACT_ERRORS: Record<string, Record<number, string>> = {
+  receivable: {
+    1: "Not authorized to perform this action.",
+    2: "Only the designated verifier can mint receivables.",
+    3: "Receivable not found.",
+    4: "Receivable has an invalid status for this operation.",
+    5: "Maturity date must be in the future.",
+    6: "Face value must be greater than zero.",
+    7: "Contract is already initialized.",
+    8: "Contract is paused. Try again later.",
+    9: "You do not own this receivable.",
+    10: "Only the borrow contract can perform this action.",
+    11: "Receivable transfers are not allowed in its current state.",
+  },
+  borrow: {
+    1: "Not authorized to perform this action.",
+    2: "Contract is already initialized.",
+    3: "Loan not found.",
+    4: "Loan status does not allow this operation.",
+    5: "Loan-to-value ratio exceeded. Try a smaller borrow amount.",
+    6: "Insufficient collateral to cover the loan.",
+    7: "Loan is not eligible for liquidation.",
+    8: "Amount must be greater than zero.",
+    9: "Contract is paused. Try again later.",
+    10: "Loan duration exceeds the maximum allowed.",
+    11: "You do not own the receivable used as collateral.",
+    12: "Receivable is not active and cannot be used as collateral.",
+    13: "Arithmetic overflow — values too large.",
+    14: "Only the borrower can perform this action.",
+  },
+  vault: {
+    1: "Not authorized to perform this action.",
+    2: "Contract is already initialized.",
+    3: "Deposit amount is below the minimum required.",
+    4: "Insufficient LP shares for withdrawal.",
+    5: "Not enough liquidity in the lending pool.",
+    6: "Lending pool utilization is too high. The vault cannot disburse this amount right now.",
+    7: "Contract is paused. Try again later.",
+    8: "Amount must be greater than zero.",
+    9: "Only the borrow contract can call this function.",
+    10: "Arithmetic overflow — values too large.",
+  },
+};
+
+function parseContractError(raw: string): string {
+  const codeMatch = raw.match(/Error\(Contract, #(\d+)\)/);
+  if (!codeMatch) return raw;
+  const code = Number(codeMatch[1]);
+
+  // Determine which contract failed based on the error message context
+  for (const domain of ["vault", "borrow", "receivable"] as const) {
+    const msg = CONTRACT_ERRORS[domain][code];
+    if (msg) return msg;
+  }
+  return `Contract error #${code}`;
+}
+
 /* ------------------------------------------------------------------ */
 /*  Page                                                               */
 /* ------------------------------------------------------------------ */
@@ -171,7 +229,7 @@ export default function GetCreditPage() {
     if (proofs && !creditData) {
       setCreditData({
         user_id: 'reclaim-verified-user',
-        credit_line_xlm: 5000,
+        credit_line_xlm: 500,
         currency: NATIVE_XLM_SAC,
         extracted_username: 'Verified User',
         context_message: 'Credit approved via Reclaim verification',
@@ -364,15 +422,14 @@ export default function GetCreditPage() {
         // Auto-advance to borrow step when mint completes
         setStep("borrow");
       } else {
-        throw new Error(
-          `Mint failed: ${JSON.stringify(mintResultVal.unwrapErr())}`
-        );
+        const errStr = JSON.stringify(mintResultVal.unwrapErr());
+        throw new Error(parseContractError(errStr) || `Mint failed: ${errStr}`);
       }
 
       setIsProcessing(false);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      setMintError(msg);
+      const raw = err instanceof Error ? err.message : String(err);
+      setMintError(parseContractError(raw));
       setIsProcessing(false);
       setStep("tokenize");
     }
@@ -434,8 +491,8 @@ export default function GetCreditPage() {
         );
       }
     } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      setBorrowError(msg);
+      const raw = err instanceof Error ? err.message : String(err);
+      setBorrowError(parseContractError(raw));
     } finally {
       setIsBorrowing(false);
     }
