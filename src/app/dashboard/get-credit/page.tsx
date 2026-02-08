@@ -463,6 +463,26 @@ export default function GetCreditPage() {
   /*  Render                                                           */
   /* ---------------------------------------------------------------- */
 
+  // Show loader while checking for existing active loans
+  if (walletMode === "unlock" && !activeLoanChecked) {
+    return (
+      <div className="p-4 md:p-6 space-y-6 max-w-3xl mx-auto">
+        <div>
+          <h1 className="text-xl md:text-2xl font-semibold">Get Credit</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Verify receivables, tokenize on Stellar, and borrow against them.
+          </p>
+        </div>
+        <Card>
+          <CardContent className="flex items-center justify-center py-16">
+            <Loader2 className="size-5 animate-spin text-muted-foreground" />
+            <span className="ml-2 text-sm text-muted-foreground">Checking existing loans...</span>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="p-4 md:p-6 space-y-6 max-w-3xl mx-auto">
       {/* Page header */}
