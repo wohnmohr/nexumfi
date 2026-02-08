@@ -41,7 +41,7 @@ import { networks as receivableNetworks } from "@/app/contracts/receivable_token
 import { Keypair } from "@stellar/stellar-sdk";
 import { basicNodeSigner } from "@stellar/stellar-sdk/contract";
 import { WalletPinDialog } from "@/components/wallet-pin-dialog";
-import { useReclaim } from "@/app/hooks/useReclaim";
+import { CreditData, useReclaim } from "@/app/hooks/useReclaim";
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -156,6 +156,7 @@ export default function GetCreditPage() {
   // Loan details (fetched after borrow)
   const [loanDetails, setLoanDetails] = useState<Loan | null>(null);
   const [loanLtv, setLoanLtv] = useState<bigint | null>(null);
+  const [creditData, setCreditData] = useState<CreditData | null>(null);
   // Reclaim verification
   const { isLoading: isVerifying, error: verifyError, startVerification, creditData: reclaimCreditData, sessionStatus } = useReclaim();
 
@@ -165,10 +166,14 @@ export default function GetCreditPage() {
 
   // Derive creditData from Reclaim hook, mapping currency to XLM SAC for testnet
   const NATIVE_XLM_SAC = "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC";
-  const creditData = reclaimCreditData
-    ? { ...reclaimCreditData, currency: NATIVE_XLM_SAC }
-    : null;
 
+
+
+    useEffect(()=>{
+      if(reclaimCreditData){
+        setCreditData({ ...reclaimCreditData, currency: NATIVE_XLM_SAC })
+      }
+    },[reclaimCreditData])
   console.log(creditData, 	reclaimCreditData, "credit data");
 
   // Fetch XLM balance from Horizon
