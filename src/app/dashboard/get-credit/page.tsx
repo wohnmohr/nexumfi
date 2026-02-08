@@ -157,7 +157,7 @@ export default function GetCreditPage() {
   const [loanDetails, setLoanDetails] = useState<Loan | null>(null);
   const [loanLtv, setLoanLtv] = useState<bigint | null>(null);
   // Reclaim verification
-  const { isLoading: isVerifying, error: verifyError, startVerification, creditData: reclaimCreditData, setMockCreditData } = useReclaim();
+  const { isLoading: isVerifying, error: verifyError, startVerification, creditData: reclaimCreditData } = useReclaim();
 
   // Existing active loan check
   const [hasActiveLoan, setHasActiveLoan] = useState(false);
@@ -254,13 +254,16 @@ export default function GetCreditPage() {
     fetchBalance(walletKeys.publicKey);
   }, [walletKeys, fetchBalance]);
 
-  // Reset mint/borrow state when new credit data arrives
+  // When verification completes (creditData arrives), auto-advance to tokenize step
   useEffect(() => {
-    setMintResult(null);
-    setMintError(null);
-    setBorrowResult(null);
-    setBorrowError(null);
-  }, [reclaimCreditData?.session_id]);
+    if (reclaimCreditData && step === "upload") {
+      setStep("tokenize");
+      setMintResult(null);
+      setMintError(null);
+      setBorrowResult(null);
+      setBorrowError(null);
+    }
+  }, [reclaimCreditData, step]);
 
   /* ---- Mint receivable on-chain ---- */
 
@@ -358,7 +361,7 @@ export default function GetCreditPage() {
       const msg = err instanceof Error ? err.message : String(err);
       setMintError(msg);
       setIsProcessing(false);
-      setStep("upload");
+      setStep("tokenize");
     }
   };
 
@@ -635,63 +638,60 @@ export default function GetCreditPage() {
         </Card>
       )}
 
+      {/* Wallet setup/unlock — show when wallet not yet unlocked */}
+      {!walletKeys && !hasActiveLoan && (
+        <WalletPinDialog mode={walletMode} onSuccess={setWalletKeys} />
+      )}
+
       {/* ============================================================ */}
-      {/*  STEP 1: Upload — Verify + Wallet Setup                      */}
+      {/*  STEP 1: Verify                                               */}
       {/* ============================================================ */}
       {step === "upload" && !hasActiveLoan && (
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-3">
+              <div className="size-11 rounded-xl bg-primary/15 flex items-center justify-center">
+                <ShieldCheck className="size-6 text-primary" />
+              </div>
+              <div>
+                <CardTitle className="text-lg">Verify Your Receivables</CardTitle>
+                <CardDescription>
+                  Complete verification via Reclaim to prove your receivables and get a credit line.
+                </CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {verifyError && (
+              <div className="rounded-xl bg-destructive/10 border border-destructive/20 p-3">
+                <p className="text-xs text-destructive">{verifyError}</p>
+              </div>
+            )}
+
+            <Button
+              className="w-full"
+              size="lg"
+              onClick={startVerification}
+              disabled={isVerifying}
+            >
+              {isVerifying ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <ShieldCheck className="size-4" />
+              )}
+              {isVerifying ? "Verifying..." : "Verify with Reclaim"}
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ============================================================ */}
+      {/*  STEP 2: Tokenize — Credit Summary + Mint + Result            */}
+      {/* ============================================================ */}
+      {step === "tokenize" && !hasActiveLoan && (
         <>
-          {/* Verification card — show when credit data not yet available */}
-          {!creditData && (
-            <Card>
-              <CardHeader>
-                <div className="flex items-center gap-3">
-                  <div className="size-11 rounded-xl bg-primary/15 flex items-center justify-center">
-                    <ShieldCheck className="size-6 text-primary" />
-                  </div>
-                  <div>
-                    <CardTitle className="text-lg">Verify Your Receivables</CardTitle>
-                    <CardDescription>
-                      Complete verification via Reclaim to prove your receivables and get a credit line.
-                    </CardDescription>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {verifyError && (
-                  <div className="rounded-xl bg-destructive/10 border border-destructive/20 p-3">
-                    <p className="text-xs text-destructive">{verifyError}</p>
-                  </div>
-                )}
-
-                <Button
-                  className="w-full"
-                  size="lg"
-                  onClick={startVerification}
-                  disabled={isVerifying}
-                >
-                  {isVerifying ? (
-                    <Loader2 className="size-4 animate-spin" />
-                  ) : (
-                    <ShieldCheck className="size-4" />
-                  )}
-                  {isVerifying ? "Verifying..." : "Verify with Reclaim"}
-                </Button>
-
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="w-full text-muted-foreground"
-                  onClick={setMockCreditData}
-                  disabled={isVerifying}
-                >
-                  Skip (mock credit for testing)
-                </Button>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Credit Approved card — show after verification */}
-          {creditData && (
+          {/* Credit Approved — ready to tokenize */}
+          {!isProcessing && !mintResult && creditData && (
             <Card className="border-emerald-500/20">
               <CardHeader>
                 <div className="flex items-center gap-3">
@@ -763,18 +763,6 @@ export default function GetCreditPage() {
             </Card>
           )}
 
-          {/* Wallet setup/unlock — show when wallet not yet unlocked */}
-          {!walletKeys && (
-            <WalletPinDialog mode={walletMode} onSuccess={setWalletKeys} />
-          )}
-        </>
-      )}
-
-      {/* ============================================================ */}
-      {/*  STEP 2: Tokenize — Processing + Result                      */}
-      {/* ============================================================ */}
-      {step === "tokenize" && !hasActiveLoan && (
-        <>
           {/* Processing progress */}
           {isProcessing && (
             <Card>
