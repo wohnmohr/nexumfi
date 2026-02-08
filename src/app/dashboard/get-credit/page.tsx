@@ -28,7 +28,6 @@ import {
   Percent,
   AlertTriangle,
 } from "lucide-react";
-// import { useReclaim } from "@/app/hooks/useReclaim";
 import { getStellarWallet } from "@/lib/stellar-wallet";
 import {
   createReceivableClient,
@@ -157,38 +156,18 @@ export default function GetCreditPage() {
   // Loan details (fetched after borrow)
   const [loanDetails, setLoanDetails] = useState<Loan | null>(null);
   const [loanLtv, setLoanLtv] = useState<bigint | null>(null);
-  // Reclaim verification (commented out as per original file structure but kept for context)
-  const { proofs, isLoading: isVerifying, error: verifyError, startVerification, creditData: reclaimCreditData, setMockCreditData } = useReclaim();
-  const isVerified = proofs !== null && proofs.length > 0;
+  // Reclaim verification
+  const { isLoading: isVerifying, error: verifyError, startVerification, creditData: reclaimCreditData, setMockCreditData } = useReclaim();
 
   // Existing active loan check
   const [hasActiveLoan, setHasActiveLoan] = useState(false);
   const [activeLoanChecked, setActiveLoanChecked] = useState(false);
 
-  // Mock verification — static data for testing contracts
-  // currency must be a Stellar token contract address (SAC), not a ticker
+  // Derive creditData from Reclaim hook, mapping currency to XLM SAC for testnet
   const NATIVE_XLM_SAC = "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC";
-  const [creditData, setCreditData] = useState({
-    user_id: "mock-user-001",
-    credit_line: 1000,
-    currency: NATIVE_XLM_SAC,
-    extracted_username: "testuser",
-    context_message: "Mock verification for testing",
-    session_id: "mock-session-001",
-  });
-
-  // const setMockCreditData = () => {
-  //   setCreditData({
-  //     user_id: "mock-user-001",
-  //     credit_line: 1000,
-  //     currency: NATIVE_XLM_SAC,
-  //     extracted_username: "testuser",
-  //     context_message: "Mock verification for testing",
-  //     session_id: "mock-session-001",
-  //   });
-  // };
-
-  // const isVerifying = false;
+  const creditData = reclaimCreditData
+    ? { ...reclaimCreditData, currency: NATIVE_XLM_SAC }
+    : null;
 
   // Fetch XLM balance from Horizon
   const fetchBalance = useCallback(async (pubKey: string) => {
@@ -281,7 +260,7 @@ export default function GetCreditPage() {
     setMintError(null);
     setBorrowResult(null);
     setBorrowError(null);
-  }, [creditData?.session_id]);
+  }, [reclaimCreditData?.session_id]);
 
   /* ---- Mint receivable on-chain ---- */
 
@@ -627,15 +606,6 @@ export default function GetCreditPage() {
                 </span>
               </div>
             )}
-            <Button
-              variant="ghost"
-              size="sm"
-              className="w-full text-muted-foreground"
-              onClick={setMockCreditData}
-              disabled={isVerifying || !!creditData}
-            >
-              Skip (mock credit for testing)
-            </Button>
           </CardContent>
         </Card>
       )}
@@ -670,75 +640,128 @@ export default function GetCreditPage() {
       {/* ============================================================ */}
       {step === "upload" && !hasActiveLoan && (
         <>
-          <Card className="border-emerald-500/20">
-            <CardHeader>
-              <div className="flex items-center gap-3">
-                <div className="size-11 rounded-xl bg-emerald-500/15 flex items-center justify-center">
-                  <CheckCircle2 className="size-6 text-emerald-500" />
+          {/* Verification card — show when credit data not yet available */}
+          {!creditData && (
+            <Card>
+              <CardHeader>
+                <div className="flex items-center gap-3">
+                  <div className="size-11 rounded-xl bg-primary/15 flex items-center justify-center">
+                    <ShieldCheck className="size-6 text-primary" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-lg">Verify Your Receivables</CardTitle>
+                    <CardDescription>
+                      Complete verification via Reclaim to prove your receivables and get a credit line.
+                    </CardDescription>
+                  </div>
                 </div>
-                <div>
-                  <CardTitle className="text-lg">Credit Approved</CardTitle>
-                  <CardDescription>
-                    Your receivables have been verified and credit is ready.
-                  </CardDescription>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-5">
-              <div className="rounded-xl bg-muted/50 p-4 space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">
-                    User ID
-                  </span>
-                  <span className="text-sm font-mono truncate max-w-[200px]">
-                    {creditData.user_id}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">
-                    Username
-                  </span>
-                  <span className="text-sm font-medium">
-                    {creditData.extracted_username}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">
-                    Session ID
-                  </span>
-                  <span className="text-sm font-mono truncate max-w-[180px]">
-                    {creditData.session_id}
-                  </span>
-                </div>
-                <div className="border-t border-border pt-3 flex items-center justify-between">
-                  <span className="text-sm font-medium text-foreground">
-                    Credit Line
-                  </span>
-                  <span className="text-lg font-semibold text-emerald-500 tabular-nums">
-                    {fmtXlm(creditData.credit_line)} XLM
-                  </span>
-                </div>
-              </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {verifyError && (
+                  <div className="rounded-xl bg-destructive/10 border border-destructive/20 p-3">
+                    <p className="text-xs text-destructive">{verifyError}</p>
+                  </div>
+                )}
 
-              {mintError && (
-                <div className="rounded-xl bg-destructive/10 border border-destructive/20 p-3">
-                  <p className="text-xs text-destructive">{mintError}</p>
-                </div>
-              )}
-
-              {/* Tokenize button — only when wallet is unlocked */}
-              {walletKeys && (
                 <Button
                   className="w-full"
                   size="lg"
-                  onClick={handleMintReceivable}
+                  onClick={startVerification}
+                  disabled={isVerifying}
                 >
-                  <Coins className="size-4" />
-                  Tokenize on Stellar
+                  {isVerifying ? (
+                    <Loader2 className="size-4 animate-spin" />
+                  ) : (
+                    <ShieldCheck className="size-4" />
+                  )}
+                  {isVerifying ? "Verifying..." : "Verify with Reclaim"}
                 </Button>
-              )}
-            </CardContent>
-          </Card>
+
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="w-full text-muted-foreground"
+                  onClick={setMockCreditData}
+                  disabled={isVerifying}
+                >
+                  Skip (mock credit for testing)
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Credit Approved card — show after verification */}
+          {creditData && (
+            <Card className="border-emerald-500/20">
+              <CardHeader>
+                <div className="flex items-center gap-3">
+                  <div className="size-11 rounded-xl bg-emerald-500/15 flex items-center justify-center">
+                    <CheckCircle2 className="size-6 text-emerald-500" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-lg">Credit Approved</CardTitle>
+                    <CardDescription>
+                      Your receivables have been verified and credit is ready.
+                    </CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-5">
+                <div className="rounded-xl bg-muted/50 p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">
+                      User ID
+                    </span>
+                    <span className="text-sm font-mono truncate max-w-50">
+                      {creditData.user_id}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">
+                      Username
+                    </span>
+                    <span className="text-sm font-medium">
+                      {creditData.extracted_username}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">
+                      Session ID
+                    </span>
+                    <span className="text-sm font-mono truncate max-w-45">
+                      {creditData.session_id}
+                    </span>
+                  </div>
+                  <div className="border-t border-border pt-3 flex items-center justify-between">
+                    <span className="text-sm font-medium text-foreground">
+                      Credit Line
+                    </span>
+                    <span className="text-lg font-semibold text-emerald-500 tabular-nums">
+                      {fmtXlm(creditData.credit_line)} XLM
+                    </span>
+                  </div>
+                </div>
+
+                {mintError && (
+                  <div className="rounded-xl bg-destructive/10 border border-destructive/20 p-3">
+                    <p className="text-xs text-destructive">{mintError}</p>
+                  </div>
+                )}
+
+                {/* Tokenize button — only when wallet is unlocked */}
+                {walletKeys && (
+                  <Button
+                    className="w-full"
+                    size="lg"
+                    onClick={handleMintReceivable}
+                  >
+                    <Coins className="size-4" />
+                    Tokenize on Stellar
+                  </Button>
+                )}
+              </CardContent>
+            </Card>
+          )}
 
           {/* Wallet setup/unlock — show when wallet not yet unlocked */}
           {!walletKeys && (
