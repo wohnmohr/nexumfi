@@ -69,7 +69,7 @@ export default function RewardsPage() {
   }
 
   return (
-    <div className="p-4 md:p-6 space-y-6 max-w-5xl">
+    <div className="p-4 md:p-6 space-y-6 max-w-5xl mx-auto">
       {/* Page header */}
       <div>
         <h1 className="text-xl md:text-2xl font-semibold">Rewards</h1>
@@ -149,7 +149,7 @@ export default function RewardsPage() {
                 <span className={`text-[10px] font-medium ${m.reached ? "text-foreground" : "text-muted-foreground"}`}>
                   {m.label}
                 </span>
-                <span className="text-[9px] text-muted-foreground">
+                <span className="text-[10px] text-muted-foreground">
                   {(m.points / 1000).toFixed(0)}K
                 </span>
               </div>
