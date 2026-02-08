@@ -169,6 +169,7 @@ export default function GetCreditPage() {
     ? { ...reclaimCreditData, currency: NATIVE_XLM_SAC }
     : null;
 
+  
   // Fetch XLM balance from Horizon
   const fetchBalance = useCallback(async (pubKey: string) => {
     try {
@@ -809,7 +810,7 @@ export default function GetCreditPage() {
       {/* ============================================================ */}
       {/*  STEP 2: Tokenize — Credit Summary + Mint + Result            */}
       {/* ============================================================ */}
-      {step === "tokenize" && !hasActiveLoan && (
+      {step === "tokenize"  && (
         <>
           {/* Credit Approved — ready to tokenize */}
           {!isProcessing && !mintResult && creditData && (
