@@ -96,3 +96,40 @@ export async function verifyStellarWalletPincode(pincode: string): Promise<boole
     return false;
   }
 }
+
+/**
+ * Load the wallet's keypair by decrypting with the pincode.
+ * Returns both publicKey and privateKey (secret) for transaction signing.
+ */
+export async function loadStellarWalletKey(
+  pincode: string
+): Promise<{ publicKey: string; privateKey: string } | null> {
+  const wallet = getStellarWallet();
+  if (!wallet) return null;
+
+  try {
+    const keyManager = setupKeyManager();
+    const key = await keyManager.loadKey(wallet.keyId, pincode);
+    return { publicKey: key.publicKey, privateKey: key.privateKey };
+  } catch {
+    return null;
+  }
+}
+
+/** Fund a testnet account via Stellar Friendbot */
+export async function fundWithFriendbot(publicKey: string): Promise<boolean> {
+  try {
+    const res = await fetch(
+      `https://friendbot.stellar.org?addr=${encodeURIComponent(publicKey)}`
+    );
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
+/** Remove wallet data from localStorage */
+export function clearStellarWallet(): void {
+  if (typeof window === "undefined") return;
+  localStorage.removeItem(WALLET_STORE_KEY);
+}

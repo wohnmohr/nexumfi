@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { ClaimsList } from "./claims-list";
+import { DashboardContent } from "./dashboard-content";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -22,8 +22,7 @@ export default async function DashboardPage() {
         </p>
       </div>
 
-      {/* Insurance claims overview */}
-      <ClaimsList />
+      <DashboardContent />
     </div>
   );
 }
