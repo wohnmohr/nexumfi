@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
 import {
   Card,
   CardContent,
@@ -26,7 +25,6 @@ import {
   Shield,
   Clock,
   Percent,
-  AlertTriangle,
 } from "lucide-react";
 import { getStellarWallet } from "@/lib/stellar-wallet";
 import {
@@ -172,8 +170,6 @@ function parseContractError(raw: string): string {
 /* ------------------------------------------------------------------ */
 
 export default function GetCreditPage() {
-  const router = useRouter();
-
   // Flow state
   const [step, setStep] = useState<Step>("upload");
 
@@ -218,9 +214,6 @@ export default function GetCreditPage() {
   // Reclaim verification
   const { isLoading: isVerifying, error: verifyError, startVerification, proofs, sessionStatus } = useReclaim();
 
-  // Existing active loan check
-  const [hasActiveLoan, setHasActiveLoan] = useState(false);
-  const [activeLoanChecked, setActiveLoanChecked] = useState(false);
 
   // When Reclaim verification succeeds (proofs arrive), set static credit data
   const NATIVE_XLM_SAC = "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC";
@@ -280,36 +273,11 @@ export default function GetCreditPage() {
     }
   }, []);
 
-  // Check stellar wallet on mount + check for active loans
+  // Check stellar wallet on mount
   useEffect(() => {
     const existing = getStellarWallet();
     if (!existing) return;
     setWalletMode("unlock");
-
-    // Pre-check active loans using public key (no PIN needed)
-    const verifierSecret = process.env.NEXT_PUBLIC_STELLAR_VERIFIER_SECRET;
-    if (!verifierSecret) return;
-
-    (async () => {
-      try {
-        const client = createBorrowClient(verifierSecret);
-        const res = await client.get_borrower_loans({ borrower: existing.publicKey });
-        const loanIds = res.result;
-        if (loanIds && loanIds.length > 0) {
-          const loanResults = await Promise.all(
-            loanIds.map((id) => client.get_loan({ loan_id: id }))
-          );
-          const active = loanResults.some(
-            (r) => r.result.isOk() && r.result.unwrap().status.tag === "Active"
-          );
-          setHasActiveLoan(active);
-        }
-      } catch {
-        // non-critical
-      } finally {
-        setActiveLoanChecked(true);
-      }
-    })();
   }, []);
 
   // Fetch pool info on mount
@@ -515,26 +483,6 @@ export default function GetCreditPage() {
   /*  Render                                                           */
   /* ---------------------------------------------------------------- */
 
-  // Show loader while checking for existing active loans
-  if (walletMode === "unlock" && !activeLoanChecked) {
-    return (
-      <div className="p-4 md:p-6 space-y-6 max-w-3xl mx-auto">
-        <div>
-          <h1 className="text-xl md:text-2xl font-semibold">Get Credit</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Verify receivables, tokenize on Stellar, and borrow against them.
-          </p>
-        </div>
-        <Card>
-          <CardContent className="flex items-center justify-center py-16">
-            <Loader2 className="size-5 animate-spin text-muted-foreground" />
-            <span className="ml-2 text-sm text-muted-foreground">Checking existing loans...</span>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
   return (
     <div className="p-4 md:p-6 space-y-6 max-w-3xl mx-auto">
       {/* Page header */}
@@ -683,40 +631,15 @@ export default function GetCreditPage() {
         </Card>
       )}
 
-      {/* ============================================================ */}
-      {/*  Active loan — block flow                                     */}
-      {/* ============================================================ */}
-      {hasActiveLoan && activeLoanChecked && (
-        <Card className="border-amber-500/30 bg-amber-500/[0.03]">
-          <CardContent className="flex flex-col items-center justify-center py-10 text-center">
-            <div className="size-14 rounded-2xl bg-amber-500/15 flex items-center justify-center mb-4">
-              <AlertTriangle className="size-7 text-amber-500" />
-            </div>
-            <h3 className="text-base font-semibold">Active Loan Exists</h3>
-            <p className="text-sm text-muted-foreground mt-1 max-w-sm">
-              You already have an active loan. Please repay your existing loan
-              before borrowing again.
-            </p>
-            <Button
-              className="mt-5"
-              variant="outline"
-              onClick={() => router.push("/dashboard")}
-            >
-              View Active Loans
-            </Button>
-          </CardContent>
-        </Card>
-      )}
-
       {/* Wallet setup/unlock — show when wallet not yet unlocked */}
-      {!walletKeys && !hasActiveLoan && (
+      {!walletKeys && (
         <WalletPinDialog mode={walletMode} onSuccess={setWalletKeys} />
       )}
 
       {/* ============================================================ */}
       {/*  STEP 1: Verify                                               */}
       {/* ============================================================ */}
-      {step === "upload" && !hasActiveLoan && (
+      {step === "upload" && (
         <>
           {/* Monitoring session status - waiting for mobile submission */}
           {isVerifying && sessionStatus && sessionStatus !== "MOBILE_SUBMITTED" && (
@@ -1129,7 +1052,7 @@ export default function GetCreditPage() {
       {/* ============================================================ */}
       {/*  STEP 3: Borrow                                               */}
       {/* ============================================================ */}
-      {step === "borrow" && !hasActiveLoan && (
+      {step === "borrow" && (
         <>
           {/* Borrow form / confirmation */}
           {!borrowResult && (
