@@ -83,14 +83,28 @@ interface InvoiceProfile {
   payment_cycle_days?: number;
 }
 
+interface PolicyHolderIdentity {
+  document_type?: string;
+  document_hash?: string;
+  status?: string;
+}
+
 interface PolicyHolderApi {
   _id: string;
   country: "US" | "IN";
+  user_type?: string;
   full_name: string;
   dob?: string;
-  identity?: Record<string, unknown>;
+  identity?: PolicyHolderIdentity | null;
   email: string;
   status: "REGISTERED" | "KYC_PENDING" | "ACTIVE";
+  kyc_verified_at?: string | null;
+  kyc_provider?: string | null;
+  aml_status?: string | null;
+  aml_checked_at?: string | null;
+  aml_provider?: string | null;
+  pan_masked?: string | null;
+  ssn_last4_masked?: string | null;
   created_at: string;
 }
 
@@ -275,42 +289,83 @@ export default function ProfilePage() {
                   />
                 </div>
               ) : profile.policy_holder ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <InfoItem
-                    icon={User}
-                    label="Full Name"
-                    value={profile.policy_holder.full_name}
-                  />
-                  <InfoItem
-                    icon={Mail}
-                    label="Email"
-                    value={profile.policy_holder.email}
-                  />
-                  <InfoItem
-                    icon={Globe}
-                    label="Country"
-                    value={
-                      profile.policy_holder.country === "IN"
-                        ? "India"
-                        : "United States"
-                    }
-                  />
-                  <InfoItem
-                    icon={Clock}
-                    label="Joined"
-                    value={new Date(
-                      profile.policy_holder.created_at
-                    ).toLocaleDateString("en-US", {
-                      year: "numeric",
-                      month: "short",
-                      day: "numeric",
-                    })}
-                  />
-                  <InfoItem
-                    icon={ShieldCheck}
-                    label="Status"
-                    value={getStatusLabel(profile.policy_holder.status)}
-                  />
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <InfoItem
+                      icon={User}
+                      label="Full Name"
+                      value={profile.policy_holder.full_name}
+                    />
+                    <InfoItem
+                      icon={Mail}
+                      label="Email"
+                      value={profile.policy_holder.email}
+                    />
+                    <InfoItem
+                      icon={Globe}
+                      label="Country"
+                      value={
+                        profile.policy_holder.country === "IN"
+                          ? "India"
+                          : "United States"
+                      }
+                    />
+                    {profile.policy_holder.dob && (
+                      <InfoItem
+                        icon={Clock}
+                        label="Date of Birth"
+                        value={new Date(
+                          profile.policy_holder.dob
+                        ).toLocaleDateString("en-US", {
+                          year: "numeric",
+                          month: "short",
+                          day: "numeric",
+                        })}
+                      />
+                    )}
+                    <InfoItem
+                      icon={Clock}
+                      label="Joined"
+                      value={new Date(
+                        profile.policy_holder.created_at
+                      ).toLocaleDateString("en-US", {
+                        year: "numeric",
+                        month: "short",
+                        day: "numeric",
+                      })}
+                    />
+                    <InfoItem
+                      icon={ShieldCheck}
+                      label="Status"
+                      value={getStatusLabel(profile.policy_holder.status)}
+                    />
+                    {profile.policy_holder.user_type && (
+                      <InfoItem
+                        icon={FileText}
+                        label="User Type"
+                        value={profile.policy_holder.user_type}
+                      />
+                    )}
+                  </div>
+                  {profile.policy_holder.aml_status && (
+                    <div className="rounded-xl border border-border bg-muted/30 p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <ShieldCheck className="size-4 text-primary" />
+                          <span className="text-sm font-semibold">AML Status</span>
+                        </div>
+                        <StatusBadge status={profile.policy_holder.aml_status} />
+                      </div>
+                      {profile.policy_holder.aml_checked_at && (
+                        <p className="text-xs text-muted-foreground mt-2">
+                          Checked{" "}
+                          {new Date(
+                            profile.policy_holder.aml_checked_at
+                          ).toLocaleDateString()}
+                        </p>
+                      )}
+                    </div>
+                  )}
                 </div>
               ) : (
                 <p className="text-sm text-muted-foreground">
@@ -329,21 +384,159 @@ export default function ProfilePage() {
         <VendorCard vendor={profile.vendor} />
       )}
 
-      {!loading && profile && !profile.vendor && (
+      {/* ============================================================ */}
+      {/*  Policy Holder card                                           */}
+      {/* ============================================================ */}
+      {!loading && profile?.policy_holder && (
+        <PolicyHolderCard policyHolder={profile.policy_holder} />
+      )}
+
+      {!loading && profile && !profile.vendor && !profile.policy_holder && (
         <Card>
           <CardContent className="py-16 flex flex-col items-center text-center">
             <div className="size-14 rounded-2xl bg-muted flex items-center justify-center mb-4">
               <Building2 className="size-7 text-muted-foreground" />
             </div>
-            <h2 className="text-lg font-semibold">No Buyers Yet</h2>
+            <h2 className="text-lg font-semibold">No Profile Yet</h2>
             <p className="text-sm text-muted-foreground mt-1 max-w-sm">
-              No buyer details to display. Complete the onboarding process to
-              see your KYC details here.
+              Complete the onboarding process to see your details here.
             </p>
           </CardContent>
         </Card>
       )}
     </div>
+  );
+}
+
+/* ================================================================== */
+/*  Policy Holder detail card                                          */
+/* ================================================================== */
+
+function PolicyHolderCard({ policyHolder }: { policyHolder: PolicyHolderApi }) {
+  const identity = policyHolder.identity;
+  const identityDocType = identity?.document_type ?? "—";
+  const identityStatus = identity?.status ?? "—";
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="size-11 rounded-xl bg-emerald-500/10 flex items-center justify-center shrink-0">
+              <ShieldCheck className="size-5 text-emerald-500" />
+            </div>
+            <div className="min-w-0">
+              <CardTitle className="text-lg truncate">
+                {policyHolder.full_name}
+              </CardTitle>
+              <CardDescription className="flex items-center gap-1.5 mt-0.5">
+                <span className="font-mono text-xs">{policyHolder._id}</span>
+              </CardDescription>
+            </div>
+          </div>
+          <StatusBadge status={policyHolder.status} />
+        </div>
+      </CardHeader>
+
+      <CardContent className="space-y-5">
+        {/* Basic Info */}
+        <div className="rounded-xl border border-border bg-muted/30 p-4 space-y-3">
+          <h3 className="text-sm font-semibold">KYC Details</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <InfoItem
+              icon={User}
+              label="Full Name"
+              value={policyHolder.full_name}
+            />
+            <InfoItem
+              icon={Mail}
+              label="Email"
+              value={policyHolder.email}
+            />
+            <InfoItem
+              icon={Globe}
+              label="Country"
+              value={
+                policyHolder.country === "IN" ? "India" : "United States"
+              }
+            />
+            {policyHolder.dob && (
+              <InfoItem
+                icon={Clock}
+                label="Date of Birth"
+                value={new Date(policyHolder.dob).toLocaleDateString("en-US", {
+                  year: "numeric",
+                  month: "short",
+                  day: "numeric",
+                })}
+              />
+            )}
+            <InfoItem
+              icon={FileText}
+              label="Identity Document"
+              value={identityDocType}
+            />
+            <InfoItem
+              icon={ShieldCheck}
+              label="Identity Status"
+              value={getStatusLabel(identityStatus)}
+            />
+            {(policyHolder.pan_masked || policyHolder.ssn_last4_masked) && (
+              <InfoItem
+                icon={FileText}
+                label={
+                  policyHolder.country === "IN" ? "PAN (masked)" : "SSN (masked)"
+                }
+                value={
+                  policyHolder.pan_masked || policyHolder.ssn_last4_masked || "—"
+                }
+              />
+            )}
+          </div>
+          {policyHolder.kyc_verified_at && (
+            <p className="text-xs text-muted-foreground pt-2">
+              KYC verified{" "}
+              {new Date(policyHolder.kyc_verified_at).toLocaleDateString()}
+              {policyHolder.kyc_provider && ` via ${policyHolder.kyc_provider}`}
+            </p>
+          )}
+        </div>
+
+        {/* AML Status */}
+        {policyHolder.aml_status && (
+          <div className="rounded-xl border border-border bg-muted/30 p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="size-4 text-primary" />
+                <span className="text-sm font-semibold">AML Status</span>
+              </div>
+              <StatusBadge status={policyHolder.aml_status} />
+            </div>
+            {policyHolder.aml_checked_at && (
+              <p className="text-xs text-muted-foreground mt-2">
+                Checked{" "}
+                {new Date(policyHolder.aml_checked_at).toLocaleDateString()}
+              </p>
+            )}
+            {policyHolder.aml_provider && (
+              <p className="text-xs text-muted-foreground">
+                Provider: {policyHolder.aml_provider}
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* Registered */}
+        <div className="text-xs text-muted-foreground">
+          Registered{" "}
+          {new Date(policyHolder.created_at).toLocaleDateString("en-US", {
+            year: "numeric",
+            month: "short",
+            day: "numeric",
+          })}
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -605,10 +798,13 @@ function StatusBadge({ status }: { status: string }) {
     status === "ACTIVE" ||
     status === "CLEAR" ? (
       <CheckCircle2 className="size-3" />
-    ) : status === "rejected" ? (
+    ) : status === "rejected" ||
+      status === "FLAGGED" ||
+      status === "ERROR" ? (
       <XCircle className="size-3" />
-    ) : status === "pending_verification" ||
-      status === "KYC_PENDING" ? (
+    ) :     status === "pending_verification" ||
+      status === "KYC_PENDING" ||
+      status === "PENDING" ? (
       <AlertCircle className="size-3" />
     ) : (
       <Clock className="size-3" />

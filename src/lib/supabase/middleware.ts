@@ -37,30 +37,43 @@ export async function updateSession(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname;
 
+  // Redirect /login and /signup to home with auth modal
+  if (pathname.startsWith("/login") || pathname.startsWith("/signup")) {
+    const url = request.nextUrl.clone();
+    const nextParam = url.searchParams.get("next");
+    const roleParam = url.searchParams.get("role");
+    url.pathname = "/";
+    url.searchParams.delete("next");
+    url.searchParams.delete("role");
+    url.searchParams.set("auth", "open");
+    if (nextParam) url.searchParams.set("next", nextParam);
+    if (roleParam) url.searchParams.set("role", roleParam);
+    return NextResponse.redirect(url);
+  }
+
   // Public routes that don't require authentication
   const isPublicRoute =
     pathname === "/" ||
-    pathname.startsWith("/login") ||
-    pathname.startsWith("/signup") ||
     pathname.startsWith("/forgot-password") ||
     pathname.startsWith("/auth") ||
     pathname.startsWith("/contact") ||
-    pathname.startsWith("/demo");
+    pathname.startsWith("/privacy") ||
+    pathname.startsWith("/terms") ||
+    pathname.startsWith("/demo") ||
+    pathname.startsWith("/onboarding");
 
-  // Redirect unauthenticated users to login page (with return URL)
+  // Redirect unauthenticated users to home with auth modal (with return URL)
   if (!user && !isPublicRoute) {
     const url = request.nextUrl.clone();
-    url.pathname = "/login";
+    url.pathname = "/";
+    url.searchParams.set("auth", "open");
     url.searchParams.set("next", pathname);
     return NextResponse.redirect(url);
   }
 
-  // Redirect authenticated users away from auth pages to dashboard
+  // Redirect authenticated users away from home to dashboard
   // Preserve "next" param so users land where they intended (e.g. after login)
-  const isAuthPage =
-    pathname.startsWith("/login") ||
-    pathname.startsWith("/signup") ||
-    pathname.startsWith("/forgot-password");
+  const isAuthPage = pathname.startsWith("/forgot-password");
 
   if (user && (pathname === "/" || isAuthPage)) {
     const url = request.nextUrl.clone();

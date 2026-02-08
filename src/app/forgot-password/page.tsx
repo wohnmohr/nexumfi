@@ -125,7 +125,7 @@ export default function ForgotPasswordPage() {
         </CardContent>
         <CardFooter>
           <Link
-            href="/login"
+            href="/?auth=open"
             className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mx-auto"
           >
             <ArrowLeft className="size-4" />

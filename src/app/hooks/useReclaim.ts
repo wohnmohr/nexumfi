@@ -37,6 +37,17 @@ export function useReclaim() {
     return () => clearStatusPoll();
   }, [clearStatusPoll]);
 
+  const setMockCreditData = useCallback(() => {
+    setCreditData({
+      user_id: 'mock-user-123',
+      credit_line: 5000,
+      currency: 'USDT',
+      extracted_username: 'Test User',
+      context_message: 'Mock credit for testing withdraw API',
+      session_id: `mock-session-${Date.now()}`,
+    });
+  }, []);
+
   const startVerification = useCallback(async () => {
     try {
       setIsLoading(true);
@@ -130,5 +141,5 @@ export function useReclaim() {
     }
   }, [resetLoading, clearStatusPoll]);
 
-  return { proofs, isLoading, error, startVerification, creditData };
+  return { proofs, isLoading, error, startVerification, creditData, setMockCreditData };
 }

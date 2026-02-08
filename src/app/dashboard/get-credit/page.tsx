@@ -156,6 +156,9 @@ export default function GetCreditPage() {
   // Loan details (fetched after borrow)
   const [loanDetails, setLoanDetails] = useState<Loan | null>(null);
   const [loanLtv, setLoanLtv] = useState<bigint | null>(null);
+  // Reclaim verification (commented out as per original file structure but kept for context)
+  // const { proofs, isLoading: isVerifying, error: verifyError, startVerification, creditData: reclaimCreditData, setMockCreditData } = useReclaim();
+  // const isVerified = proofs !== null && proofs.length > 0;
 
   // Existing active loan check
   const [hasActiveLoan, setHasActiveLoan] = useState(false);
@@ -164,14 +167,27 @@ export default function GetCreditPage() {
   // Mock verification — static data for testing contracts
   // currency must be a Stellar token contract address (SAC), not a ticker
   const NATIVE_XLM_SAC = "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC";
-  const creditData = {
+  const [creditData, setCreditData] = useState({
     user_id: "mock-user-001",
     credit_line: 1000,
     currency: NATIVE_XLM_SAC,
     extracted_username: "testuser",
     context_message: "Mock verification for testing",
     session_id: "mock-session-001",
+  });
+
+  const setMockCreditData = () => {
+    setCreditData({
+      user_id: "mock-user-001",
+      credit_line: 1000,
+      currency: NATIVE_XLM_SAC,
+      extracted_username: "testuser",
+      context_message: "Mock verification for testing",
+      session_id: "mock-session-001",
+    });
   };
+
+  const isVerifying = false;
 
   // Fetch XLM balance from Horizon
   const fetchBalance = useCallback(async (pubKey: string) => {
@@ -590,6 +606,15 @@ export default function GetCreditPage() {
                 </span>
               </div>
             )}
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-full text-muted-foreground"
+              onClick={setMockCreditData}
+              disabled={isVerifying || !!creditData}
+            >
+              Skip (mock credit for testing)
+            </Button>
           </CardContent>
         </Card>
       )}
