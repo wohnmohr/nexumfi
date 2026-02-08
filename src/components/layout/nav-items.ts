@@ -24,6 +24,7 @@ export const dashboardNavItems: NavItem[] = [
   { label: "Wallet", href: "/dashboard/wallet", icon: Wallet },
   { label: "Profile", href: "/dashboard/profile", icon: User },
   { label: "Settings", href: "/dashboard/settings", icon: Settings },
+  {label: "Earn", href: "/dashboard/dap/portfolio", icon: CreditCard},
 ];
 
 /** Nav items shown on /dashboard/dap/* routes */
