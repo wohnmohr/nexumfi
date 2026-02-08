@@ -257,14 +257,15 @@ export default function GetCreditPage() {
   // When verification completes (creditData arrives), auto-advance to tokenize step
   // This happens automatically when MOBILE_SUBMITTED status triggers credit API fetch
   useEffect(() => {
-    if (reclaimCreditData && step === "upload") {
+    if (reclaimCreditData && creditData && step === "upload") {
+      // Auto-advance to tokenize step when credit data is ready
       setStep("tokenize");
       setMintResult(null);
       setMintError(null);
       setBorrowResult(null);
       setBorrowError(null);
     }
-  }, [reclaimCreditData, step]);
+  }, [reclaimCreditData, creditData, step]);
 
   /* ---- Mint receivable on-chain ---- */
 
@@ -699,8 +700,72 @@ export default function GetCreditPage() {
             </Card>
           )}
 
-          {/* Initial verification card */}
-          {!isVerifying && !sessionStatus && (
+          {/* Show credit approved card when creditData is ready (even if still in upload step) */}
+          {reclaimCreditData && creditData && step === "upload" && (
+            <Card className="border-emerald-500/20">
+              <CardHeader>
+                <div className="flex items-center gap-3">
+                  <div className="size-11 rounded-xl bg-emerald-500/15 flex items-center justify-center">
+                    <CheckCircle2 className="size-6 text-emerald-500" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-lg">Credit Approved</CardTitle>
+                    <CardDescription>
+                      Your receivables have been verified and credit is ready.
+                    </CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-5">
+                <div className="rounded-xl bg-muted/50 p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">
+                      User ID
+                    </span>
+                    <span className="text-sm font-mono truncate max-w-50">
+                      {creditData.user_id}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">
+                      Username
+                    </span>
+                    <span className="text-sm font-medium">
+                      {creditData.extracted_username}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">
+                      Session ID
+                    </span>
+                    <span className="text-sm font-mono truncate max-w-45">
+                      {creditData.session_id}
+                    </span>
+                  </div>
+                  <div className="border-t border-border pt-3 flex items-center justify-between">
+                    <span className="text-sm font-medium text-foreground">
+                      Credit Line
+                    </span>
+                    <span className="text-lg font-semibold text-emerald-500 tabular-nums">
+                      {fmtXlm(creditData.credit_line)} XLM
+                    </span>
+                  </div>
+                </div>
+
+                <Button
+                  className="w-full"
+                  size="lg"
+                  onClick={() => setStep("tokenize")}
+                >
+                  <Coins className="size-4" />
+                  Continue to Tokenize
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Initial verification card - only show if no creditData yet */}
+          {!reclaimCreditData && !isVerifying && !sessionStatus && (
             <Card>
               <CardHeader>
                 <div className="flex items-center gap-3">

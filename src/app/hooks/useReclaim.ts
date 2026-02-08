@@ -120,13 +120,10 @@ export function useReclaim() {
                   session_id: creditJson.session_id ?? '',
                   raw_session: creditJson.raw_session,
                 });
-                setIsLoading(false); // Credit data loaded, ready for next step
-              } else {
-                setIsLoading(false);
               }
-            } else {
-              setIsLoading(false);
             }
+            // Always set loading to false after credit API call completes
+            setIsLoading(false);
           }
         } catch {
           // Ignore poll errors; startSession handles the main flow
