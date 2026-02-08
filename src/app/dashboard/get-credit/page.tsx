@@ -302,7 +302,7 @@ export default function GetCreditPage() {
       );
 
       const faceValue = BigInt(
-        Math.round(creditData.credit_line * 10_000_000)
+        Math.round(creditData.credit_line_xlm * 10_000_000)
       );
       const maturityDate = BigInt(
         Math.floor(Date.now() / 1000) + 90 * 24 * 60 * 60
@@ -383,7 +383,7 @@ export default function GetCreditPage() {
         borrower: walletKeys.publicKey,
         receivable_ids: [BigInt(mintResult.receivableId)],
         borrow_amount: BigInt(
-          Math.round(creditData.credit_line * 10_000_000 * 0.8) // 80% of face value
+          Math.round(creditData.credit_line_xlm * 10_000_000 * 0.8) // 80% of face value
         ),
         duration: BigInt(90 * 24 * 60 * 60), // 90 days
       });
@@ -748,7 +748,7 @@ export default function GetCreditPage() {
                       Credit Line
                     </span>
                     <span className="text-lg font-semibold text-emerald-500 tabular-nums">
-                      {fmtXlm(creditData.credit_line)} XLM
+                      {fmtXlm(creditData.credit_line_xlm)} XLM
                     </span>
                   </div>
                 </div>
@@ -859,7 +859,7 @@ export default function GetCreditPage() {
                       Credit Line
                     </span>
                     <span className="text-lg font-semibold text-emerald-500 tabular-nums">
-                      {fmtXlm(creditData.credit_line)} XLM
+                      {fmtXlm(creditData.credit_line_xlm)} XLM
                     </span>
                   </div>
                 </div>
@@ -1039,7 +1039,7 @@ export default function GetCreditPage() {
                         Face Value
                       </span>
                       <span className="text-lg font-semibold text-emerald-500 tabular-nums">
-                        {fmtXlm(creditData.credit_line)} XLM
+                        {fmtXlm(creditData.credit_line_xlm)} XLM
                       </span>
                     </div>
                   )}
@@ -1091,7 +1091,7 @@ export default function GetCreditPage() {
                       Face Value
                     </span>
                     <span className="text-sm tabular-nums">
-                      {fmtXlm(creditData?.credit_line ?? 0)} XLM
+                      {fmtXlm(creditData?.credit_line_xlm ?? 0)} XLM
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
@@ -1099,7 +1099,7 @@ export default function GetCreditPage() {
                       Borrow Amount (80% LTV)
                     </span>
                     <span className="text-sm font-semibold tabular-nums">
-                      {fmtXlm((creditData?.credit_line ?? 0) * 0.8)} XLM
+                      {fmtXlm((creditData?.credit_line_xlm ?? 0) * 0.8)} XLM
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
@@ -1225,7 +1225,7 @@ export default function GetCreditPage() {
                     <span className="text-sm tabular-nums">
                       {loanDetails
                         ? `${fmtXlm(stroopsToXlm(loanDetails.collateral_value))} XLM`
-                        : `${fmtXlm(creditData?.credit_line ?? 0)} XLM`}
+                        : `${fmtXlm(creditData?.credit_line_xlm ?? 0)} XLM`}
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
@@ -1272,7 +1272,7 @@ export default function GetCreditPage() {
                     <span className="text-lg font-semibold text-emerald-500 tabular-nums">
                       {loanDetails
                         ? `${fmtXlm(stroopsToXlm(loanDetails.principal))} XLM`
-                        : `${fmtXlm((creditData?.credit_line ?? 0) * 0.8)} XLM`}
+                        : `${fmtXlm((creditData?.credit_line_xlm ?? 0) * 0.8)} XLM`}
                     </span>
                   </div>
                   {loanDetails && Number(loanDetails.accrued_interest) > 0 && (

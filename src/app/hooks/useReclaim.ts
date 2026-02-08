@@ -8,7 +8,7 @@ const STATUS_POLL_INTERVAL_MS = 3000;
 
 export interface CreditData {
   user_id: string;
-  credit_line: number;
+  credit_line_xlm: number;
   currency: string;
   extracted_username: string;
   context_message: string;
@@ -42,7 +42,7 @@ export function useReclaim() {
   const setMockCreditData = useCallback(() => {
     setCreditData({
       user_id: 'mock-user-123',
-      credit_line: 5000,
+      credit_line_xlm: 5000,
       currency: 'USDT',
       extracted_username: 'Test User',
       context_message: 'Mock credit for testing withdraw API',
@@ -110,10 +110,10 @@ export function useReclaim() {
             });
             if (creditRes.ok) {
               const creditJson = await creditRes.json();
-              if (creditJson?.user_id != null && creditJson?.credit_line != null) {
+              if (creditJson?.user_id != null && creditJson?.credit_line_xlm != null) {
                 setCreditData({
                   user_id: creditJson.user_id,
-                  credit_line: creditJson.credit_line,
+                  credit_line_xlm: creditJson.credit_line_xlm,
                   currency: creditJson.currency ?? 'USDT',
                   extracted_username: creditJson.extracted_username ?? '',
                   context_message: creditJson.context_message ?? '',
